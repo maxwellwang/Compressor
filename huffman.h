@@ -1,5 +1,5 @@
-#ifndef HUFFMAN_DATA_STRUCTURES_H
-#define HUFFMAN_DATA_STRUCTURES_H
+#ifndef _HUFFMAN_DATA_STRUCTURES_H
+#define _HUFFMAN_DATA_STRUCTURES_H
 
 // Can represent either a word with frequency or a tree of words
 typedef struct _node {
@@ -11,7 +11,7 @@ typedef struct _node {
 
 // A min heap to help build Huffman tree from smallest frequencies up to larger ones
 typedef struct _heap {
-	Node* heap[]; // array representing the heap
+	Node** heap; // array representing the heap
 	int finalIndex; // index of final node in heap
 } Heap;
 
@@ -25,6 +25,6 @@ void insertNode(Heap* aHeap, Node* aNode);
 void siftDown(Heap* aHeap);
 
 // Extracts minimum node from heap
-Node extractNode(Heap* aHeap);
+Node* extractNode(Heap* aHeap);
 
 #endif

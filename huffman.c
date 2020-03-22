@@ -8,8 +8,8 @@ void siftUp(Heap* aHeap) {
 	int p = (c - 1) / 2;
 	Node* child = (aHeap->heap)[c];
 	Node* parent = (aHeap->heap)[p];
-	// If child has higher frequency than parent, swap
-	while (p > 0 && child->frequency > parent->frequency) {
+	// If child has lower frequency than parent, swap
+	while (c != 0 && child->frequency < parent->frequency) {
 		(aHeap->heap)[c] = parent;
 		(aHeap->heap)[p] = child;
 		c = p;
@@ -33,14 +33,17 @@ void siftDown(Heap* aHeap) {
 	int p = 0;
 	int c0 = 2 * p + 1;
 	int c1 = 2 * p + 2;
-	Node* parent = (aHeap->heap)[0];
+	Node* parent = (aHeap->heap)[p];
 	Node* child0 = (aHeap->heap)[c0];
 	Node* child1 = (aHeap->heap)[c1];
+	while (c0 > aHeap->finalIndex && c1 > aHeap->finalIndex) {
+		
+	}
 	return;
 }
 
 // Extracts minimum node from heap
-Node extractNode(Heap* aHeap) {
+Node* extractNode(Heap* aHeap) {
 	Node* ret = (aHeap->heap)[0];
 	if (!ret) {
 		return NULL;

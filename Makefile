@@ -3,6 +3,8 @@ CC      = gcc
 OPT     =
 CFLAGS  = -g -std=c99 -Wall -Wvla -Werror -fsanitize=address $(if $(findstring clang,$(CC)),-fsanitize=undefined) $(OPT)
 
+all: $(TARGET)
+
 $(TARGET): $(TARGET).c
 	$(CC) $(CFLAGS) $^ -o $@
 

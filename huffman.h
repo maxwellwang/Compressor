@@ -33,4 +33,7 @@ Node* buildTree(Node* nodeA, Node* nodeB);
 // Builds Huffman tree from min heap
 Node* buildHuffmanTree(Heap* aHeap);
 
+// Builds codebook from Huffman tree
+void buildCodebook(Node* aNode);
+
 #endif

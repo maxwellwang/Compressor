@@ -94,11 +94,15 @@ Node* extractNode(Heap* aHeap) {
 // Builds tree from 2 nodes
 Node* buildTree(Node* nodeA, Node* nodeB) {
 	Node* temp = (Node*)malloc(sizeof(Node));
+	if (!temp) {
+		printf("Malloc failed\n");
+		exit(EXIT_FAILURE);
+	}
 	temp->token = NULL;
 	temp->frequency = nodeA->frequency + nodeB->frequency;
 	temp->left = nodeA;
 	temp->right = nodeB;
-	return NULL;
+	return temp;
 }
 
 // Builds Huffman tree from heap
@@ -117,4 +121,9 @@ Node* buildHuffmanTree(Heap* aHeap) {
 		insertNode(aHeap, temp);
 	}
 	return (aHeap->heap)[0];
+}
+
+// Builds codebook from Huffman tree
+void buildCodebook(Node* aNode) {
+	return;
 }

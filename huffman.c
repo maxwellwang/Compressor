@@ -1,6 +1,36 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "huffman.h"
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+// Makes token node
+Node* makeTokenNode(char* token, int frequency) {
+	Node* temp = (Node*)malloc(sizeof(Node));
+	if (!temp) {
+		printf("Malloc failed\n");
+		exit(EXIT_FAILURE);
+	}
+	strcpy(temp->token, token);
+	temp->frequency = frequency;
+	temp->left = NULL;
+	temp->right = NULL;
+	return temp;
+}
+
+// Makes heap from text file
+Heap* makeHeap(char* path) {
+	Heap* temp = (Heap*)malloc(sizeof(Heap));
+	if (!temp) {
+		printf("Malloc failed\n");
+		exit(EXIT_FAILURE);
+	}
+	int fd = open(path, O_RDONLY);
+	close(fd);
+	return temp;
+}
 
 // Sifts up final node of heap to correct position
 void siftUp(Heap* aHeap) {

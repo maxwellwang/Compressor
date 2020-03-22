@@ -15,6 +15,9 @@ typedef struct _heap {
 	int finalIndex; // index of final node in heap
 } Heap;
 
+// Makes token node
+Node* makeTokenNode(char* token, int frequency);
+
 // Sifts up final node in heap to correct position
 void siftUp(Heap* aHeap);
 

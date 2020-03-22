@@ -3,7 +3,7 @@
 
 // Can represent either a word with frequency or a tree of words
 typedef struct _node {
-	char* name; // either word or tree#
+	char* token; // word
 	int frequency; // frequency of word or of tree
 	struct _node* left; // only applicable for tree
 	struct _node* right; // only applicable for tree
@@ -26,5 +26,11 @@ void siftDown(Heap* aHeap);
 
 // Extracts minimum node from heap
 Node* extractNode(Heap* aHeap);
+
+// Builds tree from 2 nodes
+Node* buildTree(Node* nodeA, Node* nodeB);
+
+// Builds Huffman tree from min heap
+Node* buildHuffmanTree(Heap* aHeap);
 
 #endif

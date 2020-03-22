@@ -6,7 +6,7 @@
 void siftUp(Heap* aHeap) {
 	int c = aHeap->finalIndex;
 	int p = (c - 1) / 2;
-	if (c != 0) {	
+	if (c != 0) {
 		Node* child = (aHeap->heap)[c];
 		Node* parent = (aHeap->heap)[p];
 		// If child has lower frequency than parent, then swap
@@ -89,4 +89,32 @@ Node* extractNode(Heap* aHeap) {
 	(aHeap->finalIndex)--;
 	siftDown(aHeap);
 	return ret;
+}
+
+// Builds tree from 2 nodes
+Node* buildTree(Node* nodeA, Node* nodeB) {
+	Node* temp = (Node*)malloc(sizeof(Node));
+	temp->token = NULL;
+	temp->frequency = nodeA->frequency + nodeB->frequency;
+	temp->left = nodeA;
+	temp->right = nodeB;
+	return NULL;
+}
+
+// Builds Huffman tree from heap
+Node* buildHuffmanTree(Heap* aHeap) {
+	if (!aHeap) {
+		return NULL;
+	}
+	Node* nodeA = NULL;
+	Node* nodeB = NULL;
+	Node* temp = NULL;
+	// Build trees until you have one left
+	while (aHeap->finalIndex > 0) {
+		nodeA = extractNode(aHeap);
+		nodeB = extractNode(aHeap);
+		temp = buildTree(nodeA, nodeB);
+		insertNode(aHeap, temp);
+	}
+	return (aHeap->heap)[0];
 }

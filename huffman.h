@@ -18,6 +18,9 @@ typedef struct _heap {
 // Makes token node
 Node* makeTokenNode(char* token, int frequency);
 
+// Makes heap from text file
+Heap* makeHeap(char* path);
+
 // Sifts up final node in heap to correct position
 void siftUp(Heap* aHeap);
 

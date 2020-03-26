@@ -1,12 +1,8 @@
-TARGET  = fileCompressor
-CC      = gcc
-OPT     =
-CFLAGS  = -g -std=c99 -Wall -Wvla -Werror -fsanitize=address $(if $(findstring clang,$(CC)),-fsanitize=undefined) $(OPT)
+all: fileCompressor.c huffman.o
+	gcc -o "fileCompressor" -g -Wall -Werror -Wvla fileCompressor.c huffman.o
 
-all: $(TARGET)
-
-$(TARGET): $(TARGET).c
-	$(CC) $(CFLAGS) $^ -o $@
+huffman.o: huffman.c
+	gcc -c -Wall -Werror -Wvla huffman.c
 
 clean:
-	rm -f $(TARGET) *.o *.a *.dylib *.dSYM
+	rm fileCompressor; rm huffman.o

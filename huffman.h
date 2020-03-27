@@ -15,23 +15,11 @@ typedef struct _heap {
 	int finalIndex; // index of final node in heap
 } Heap;
 
-// Makes token node
-Node* makeTokenNode(char*, int);
-
-// Sifts up final node in heap to correct position
-void siftUp(Heap*);
-
-// Inserts node into heap
+// Inserts node into min heap
 void insertNode(Heap*, Node*);
 
-// Sifts down first node in heap to correct position
-void siftDown(Heap*);
-
-// Extracts minimum node from heap
+// Extracts minimum node from min heap
 Node* extractNode(Heap*);
-
-// Builds tree from 2 nodes
-Node* buildTree(Node*, Node*);
 
 // Builds Huffman tree from min heap
 Node* buildHuffmanTree(Heap*);

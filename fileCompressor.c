@@ -143,6 +143,26 @@ int main(int argc, char** argv) {
 		exit(EXIT_FAILURE);
 	}
 	
+	// Execute desired command
+	if (recursive) {
+		// Descend through directory and recursively execute command
+		if (buildCodebook) {
+		
+		} else if (compress) {
+		
+		} else if (decompress) {
+		
+		}
+	} else {
+		if (buildCodebook) {
+		
+		} else if (compress) {
+		
+		} else if (decompress) {
+		
+		}
+	}
+	
 	// Close all opened files/directories
 	if (file) {
 		close(file);

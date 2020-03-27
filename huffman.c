@@ -3,7 +3,7 @@
 #include "huffman.h"
 #include <string.h>
 
-// Makes token node
+// Makes token node from name and frequency
 Node* makeTokenNode(char* token, int frequency) {
 	Node* temp = (Node*)malloc(sizeof(Node));
 	if (!temp) {
@@ -136,9 +136,4 @@ Node* buildHuffmanTree(Heap* aHeap) {
 		insertNode(aHeap, temp);
 	}
 	return (aHeap->heap)[0];
-}
-
-// Builds codebook from Huffman tree
-void buildCodebook(Node* aNode) {
-	return;
 }

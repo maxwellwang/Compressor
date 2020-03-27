@@ -15,6 +15,9 @@ typedef struct _heap {
 	int finalIndex; // index of final node in heap
 } Heap;
 
+// Makes token node from name and frequency
+Node* makeTokenNode(char*, int);
+
 // Inserts node into min heap
 void insertNode(Heap*, Node*);
 
@@ -23,8 +26,5 @@ Node* extractNode(Heap*);
 
 // Builds Huffman tree from min heap
 Node* buildHuffmanTree(Heap*);
-
-// Builds codebook from Huffman tree
-void buildCodebook(Node*);
 
 #endif

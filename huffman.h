@@ -15,6 +15,9 @@ typedef struct _heap {
 	int finalIndex; // index of final node in heap
 } Heap;
 
+// Typedef for dirent structure
+typedef struct dirent Dirent;
+
 // Makes token node from name and frequency
 Node* makeTokenNode(char*, int);
 

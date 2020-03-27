@@ -154,6 +154,7 @@ int main(int argc, char** argv) {
 		
 		}
 	} else {
+		// Execute command on file (possibly using codebook)
 		if (buildCodebook) {
 		
 		} else if (compress) {

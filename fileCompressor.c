@@ -7,11 +7,12 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <string.h>
 
 int main(int argc, char** argv) {
 	if (argc < 3) {
 		// Less than 3 arguments -> error
-		printf("Expected at least 3 arguments, received only %d\n", argc);
+		printf("Error: Expected at least three arguments, received only %d\n", argc);
 		exit(EXIT_FAILURE);
 	}
 	int buildCodebook = 0, compress = 0, decompress = 0, recursive = 0, flagSection = 1, numFlags = 0;
@@ -25,7 +26,11 @@ int main(int argc, char** argv) {
 			numFlags++;
 			if (!flagSection) {
 				// Flag detected after file/directory -> error
-				printf("Error: Expected flags to come before files/paths, received flag after file/path\n");
+				printf("Error: Expected flags to come before files/directories, received flag after file/directory\n");
+				exit(EXIT_FAILURE);
+			}
+			if (strlen(argv[argCounter]) > 2) {
+				printf("Error: Expected -b, -c, -d, or -R, received %s\n", argv[argCounter]);
 				exit(EXIT_FAILURE);
 			}
 			switch (argv[argCounter][1]) {
@@ -43,7 +48,7 @@ int main(int argc, char** argv) {
 					break;
 				default:
 					// Invalid flag detected -> error
-					printf("Error: Expected -b, -c, -d, or -R, received -%c\n", argv[argCounter][1]);
+					printf("Error: Expected -b, -c, -d, or -R, received %s\n", argv[argCounter]);
 					exit(EXIT_FAILURE);
 			}
 		} else {
@@ -51,6 +56,17 @@ int main(int argc, char** argv) {
 			flagSection = 0;
 			if (!buildCodebook && !compress && !decompress) {
 				// One of these flags is required but none were found -> error
+				if (argCounter == 1) {
+					// File/directory is where flag should be -> error
+					printf("Error: Expected -b, -c, -d, or -R to be second argument, received file/directory %s\n", argv[argCounter]);
+					exit(EXIT_FAILURE);
+				}
+				if (argCounter == 2 && recursive) {
+					// File/directory is where flag should be (recursive flag prior) -> error
+					printf("Error: Expected -b, -c, or -d to be third argument (due to recursive flag as second argument), received "
+						"file/directory %s\n", argv[argCounter]);
+					exit(EXIT_FAILURE);
+				}
 				if (recursive) {
 					printf("Error: Expected -b, -c, or -d to be one of the flags, received -R\n");
 				} else {
@@ -73,7 +89,7 @@ int main(int argc, char** argv) {
 						dir = opendir(argv[argCounter]);
 						if (!dir) {
 							// Open failed -> error
-							printf("Expected to open %s directory, failed to open\n", argv[argCounter]);
+							printf("Error: Expected to open %s directory, failed to open\n", argv[argCounter]);
 							exit(EXIT_FAILURE);
 						}
 					} else {
@@ -81,7 +97,7 @@ int main(int argc, char** argv) {
 						file = open(argv[argCounter], O_RDONLY);
 						if (file == -1) {
 							// Open failed -> error
-							printf("Expected to open %s file, failed to open\n", argv[argCounter]);
+							printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
 							exit(EXIT_FAILURE);
 						}
 					}
@@ -90,7 +106,7 @@ int main(int argc, char** argv) {
 					codebook = open(argv[argCounter], O_RDONLY);
 					if (codebook == -1) {
 						// Open failed -> error
-						printf("Expected to open %s file, failed to open\n", argv[argCounter]);
+						printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
 						exit(EXIT_FAILURE);
 					}
 				}
@@ -98,8 +114,7 @@ int main(int argc, char** argv) {
 				// Expecting one file/directory
 				if (argc - numFlags != 2) {
 					// Should have one file/directory but different amount is detected -> error
-					printf("Error: Expected one file/directory, received %d files/directories\n", argc - numFlags
-						- 1);
+					printf("Error: Expected one file/directory, received %d files/directories\n", argc - numFlags - 1);
 					exit(EXIT_FAILURE);
 				}
 				if (recursive) {
@@ -107,7 +122,7 @@ int main(int argc, char** argv) {
 					dir = opendir(argv[argCounter]);
 					if (!dir) {
 						// Open failed -> error
-						printf("Expected to open %s directory, failed to open\n", argv[argCounter]);
+						printf("Error: Expected to open %s directory, failed to open\n", argv[argCounter]);
 						exit(EXIT_FAILURE);
 					}
 				} else {
@@ -115,12 +130,17 @@ int main(int argc, char** argv) {
 					file = open(argv[argCounter], O_RDONLY);
 					if (file == -1) {
 						// Open failed -> error
-						printf("Expected to open %s file, failed to open\n", argv[argCounter]);
+						printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
 						exit(EXIT_FAILURE);
 					}
 				}
 			}
 		}
+	}
+	if (argc - numFlags == 1) {
+		// No files/directories detected -> error
+		printf("Error: Expected at least one file/directory, received none\n");
+		exit(EXIT_FAILURE);
 	}
 	
 	// Close all opened files/directories

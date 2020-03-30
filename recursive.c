@@ -35,7 +35,6 @@ void recurse(char * dirname) {
     name = dp->d_name;
     type = dp->d_type;
     if (type == DT_DIR) {
-      continue;
       if ((strcmp(name,".") * strcmp(name,".."))) {
 	//	printf("Directory found: %s\n", name);
 	pathname = malloc(strlen(dirname) + strlen(name) + 1 + 1);
@@ -48,12 +47,14 @@ void recurse(char * dirname) {
       }
     } else if (type == DT_REG) {
       printf("File found: %s\n", name);
-      FILE * fd = open(name, O_RDONLY);
-      char c;
-      while (read(fd, &c, 1)) {
-	printf("%c", c);
-      }
-      printf("\n");
+	     //this is for printout out file content
+	     // ONLY uncomment if there's only normal text files, or else will print out a mess	     
+//      FILE * fd = open(name, O_RDONLY);
+//      char c;
+//      while (read(fd, &c, 1)) {
+//	printf("%c", c);
+//      }
+//      printf("\n");
     }
   }
 }

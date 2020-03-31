@@ -144,6 +144,7 @@ int main(int argc, char** argv) {
 	}
 	
 	// Execute desired command
+	Heap* aHeap = NULL;
 	if (recursive) {
 		// Descend through directory and recursively execute command
 		if (buildCodebook) {
@@ -164,6 +165,8 @@ int main(int argc, char** argv) {
 		}
 	}
 	
+	// Free all nodes
+	freeHeap(aHeap);
 	// Close all opened files/directories
 	if (file) {
 		close(file);

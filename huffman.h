@@ -19,7 +19,7 @@ typedef struct _heap {
 typedef struct dirent Dirent;
 
 // Makes token node from name and frequency
-Node* makeTokenNode(char*, int);
+Node* makeTokenNode(char*, int, int);
 
 // Inserts node into min heap
 void insertNode(Heap*, Node*);
@@ -29,5 +29,8 @@ Node* extractNode(Heap*);
 
 // Builds Huffman tree from min heap
 Node* buildHuffmanTree(Heap*);
+
+// Fress all nodes in min heap
+void freeHeap(Heap*);
 
 #endif

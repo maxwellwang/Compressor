@@ -4,9 +4,14 @@
 #include <string.h>
 
 // Makes token node from name and frequency
-Node* makeTokenNode(char* token, int frequency) {
+Node* makeTokenNode(char* token, int tokenLength, int frequency) {
 	Node* temp = (Node*)malloc(sizeof(Node));
 	if (!temp) {
+		printf("Malloc failed\n");
+		exit(EXIT_FAILURE);
+	}
+	temp->token = (char*)malloc(tokenLength);
+	if (!(temp->token)) {
 		printf("Malloc failed\n");
 		exit(EXIT_FAILURE);
 	}
@@ -136,4 +141,29 @@ Node* buildHuffmanTree(Heap* aHeap) {
 		insertNode(aHeap, temp);
 	}
 	return (aHeap->heap)[0];
+}
+
+// Recursively free node
+void freeNode(Node* aNode) {
+	if (!aNode) {
+		return;
+	}
+	freeNode(aNode->left);
+	free(aNode->token);
+	free(aNode);
+	freeNode(aNode->right);
+	return;
+}
+
+// Frees all nodes in min heap
+void freeHeap(Heap* aHeap) {
+	Node* currNode = extractNode(aHeap);
+	if (!currNode) {
+		return;
+	}
+	while (currNode) {
+		freeNode(currNode);
+		currNode = extractNode(aHeap);
+	}
+	return;
 }

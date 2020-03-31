@@ -1,24 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-#define TABLE_INIT_SIZE 10
-#define LOAD_FACTOR 0.5
-
-int h_size = TABLE_INIT_SIZE;
-int h_items = 0;
-
-typedef struct htable_node {
-  char * string;
-  int hashcode;
-  int freq;
-} h_node;
-
+#include "hashmap.h"
+#include <string.h>
 
 //borrowed from Dan Bernstein
 int h_func(char * str) {
   unsigned long hash = 5381;
-  int c;
-  while (c = *str++) {
+  int c = 0;
+  while (c == *str++) {
     hash = ((hash << 5) + hash) + c;
   }
   return hash % h_size;
@@ -75,27 +64,4 @@ h_node * h_rehash(h_node * h_table) {
   }
   free(h_table);
   return h_tmp;
-}
-
-
-int main() {
-  int table_items = 0;
-  h_node * table = h_init();
-  table = h_add(table, "test", 1);
-  table = h_add(table, "test1", 1);
-  table = h_add(table, "test2",1);
-  table = h_add(table, "test",1);
-  table = h_add(table, "test1",1);
-  table = h_add(table, "test",1);
-  table = h_add(table, "test6",1);
-  table = h_add(table, "test5",1);
-  table = h_add(table, "test4",1);
-  table = h_add(table, "test3",1);
-  
-  int i = 0;
-  for (; i < h_size; i++) {
-    printf("%d %s\n", table[i].freq, table[i].string);
-  }
-
-  return 0;
 }

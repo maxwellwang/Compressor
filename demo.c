@@ -1,33 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define TABLE_INIT_SIZE 10
-#define LOAD_FACTOR 0.5
+#include "demo.h"
 
 int h_size = TABLE_INIT_SIZE;
 int h_items = 0;
-
-typedef struct _node {
-	char* token; // word
-	int frequency; // frequency of word or of tree
-	struct _node* left; // only applicable for tree
-	struct _node* right; // only applicable for tree
-} Node;
-
-// A min heap to help build Huffman tree from smallest frequencies up to larger ones
-typedef struct _heap {
-	Node** heap; // array representing the heap
-	int finalIndex; // index of final node in heap
-} Heap;
-
-
-typedef struct htable_node {
-  char * string;
-  int hashcode;
-  int freq;
-} h_node;
-
 
 //borrowed from Dan Bernstein
 int h_func(char * str) {
@@ -41,7 +18,11 @@ int h_func(char * str) {
 
 
 h_node * h_init() {
-  h_node * p = malloc(h_size * sizeof(h_node));
+  h_node* p = (h_node*)malloc(h_size * sizeof(h_node));
+  if (!p) {
+  	printf("Error: Malloc failed\n");
+  	exit(EXIT_FAILURE);
+  }
   int i = 0;
   for (; i < h_size; i++) {
     (p[i]).string = NULL;
@@ -97,12 +78,12 @@ h_node * h_rehash(h_node * h_table) {
 Node* makeTokenNode(char* token, int tokenLength, int frequency) {
 	Node* temp = (Node*)malloc(sizeof(Node));
 	if (!temp) {
-		printf("Malloc failed\n");
+		printf("Error: Malloc failed\n");
 		exit(EXIT_FAILURE);
 	}
 	temp->token = (char*)malloc(tokenLength);
 	if (!(temp->token)) {
-		printf("Malloc failed\n");
+		printf("Error: Malloc failed\n");
 		exit(EXIT_FAILURE);
 	}
 	strcpy(temp->token, token);
@@ -205,7 +186,7 @@ Node* extractNode(Heap* aHeap) {
 Node* buildTree(Node* nodeA, Node* nodeB) {
 	Node* temp = (Node*)malloc(sizeof(Node));
 	if (!temp) {
-		printf("Malloc failed\n");
+		printf("Error: Malloc failed\n");
 		exit(EXIT_FAILURE);
 	}
 	temp->token = NULL;
@@ -256,34 +237,4 @@ void freeHeap(Heap* aHeap) {
 		currNode = extractNode(aHeap);
 	}
 	return;
-}
-
-
-int main() {
-  //this is how you would call maketokennode with sample items
-  int table_items = 0;
-  h_node * table = h_init();
-  table = h_add(table, "test", 1);
-  table = h_add(table, "test1", 1);
-  table = h_add(table, "test2",1);
-  table = h_add(table, "test",1);
-  table = h_add(table, "test1",1);
-  table = h_add(table, "test",1);
-  table = h_add(table, "test6",1);
-  table = h_add(table, "test5",1);
-  table = h_add(table, "test4",1);
-  table = h_add(table, "test3",1);
-
-
-  Node * p;
-  int i = 0;
-  for (; i < h_size; i++) {
-    if (table[i].string != NULL) {
-      //create notes and prints the token and frequency from hashmap
-      p = makeTokenNode(table[i].string, strlen(table[i].string), table[i].freq);
-      printf("Token: %s Freq: %d\n", p->token, p->frequency);
-    }
-  }
-
-  return 0;
 }

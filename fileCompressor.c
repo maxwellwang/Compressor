@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "huffman.h"
+#include "demo.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -8,6 +8,35 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <string.h>
+#include <errno.h>
+
+// Reads file to populate hashmap w/ tokens and frequencies
+void populateHashmap(int file, h_node* table) {
+	char c = '?';
+	char* buffer = (char*)malloc(10);
+	if (!buffer) {
+		printf("Error: Malloc failed\n");
+		exit(EXIT_FAILURE);
+	}
+	memset(buffer, 0, 10);
+	char* nextBuffer; // double the buffer if it isn't long enough
+	int tokenLength = 0;
+	int readingWhitespace = 0; // reading whitespace until non-whitespace, or reading non-whitespace until whitespace
+	int size = 10; // buffer size
+	char* head = buffer; // where to write next char
+	int status = read(file, &c, 1);
+	while (status) {
+		if (status == -1 && errno == EINTR) {
+			// interrupted, try again
+			while (status == -1 && errno == EINTR) {
+				status = read(file, &c, 1);
+			}
+		}
+		if (ISWHITESPACE(c)) {
+			
+		}
+	}
+}
 
 int main(int argc, char** argv) {
 	if (argc < 3) {
@@ -94,7 +123,7 @@ int main(int argc, char** argv) {
 						}
 					} else {
 						// Expecting file
-						file = open(argv[argCounter], O_RDONLY);
+						file = open(argv[argCounter], O_RDONLY | O_NONBLOCK);
 						if (file == -1) {
 							// Open failed -> error
 							printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);

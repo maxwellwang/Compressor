@@ -192,7 +192,10 @@ int main(int argc, char** argv) {
 	}
 	
 	// Execute desired command
-	Heap* aHeap = NULL;
+	Heap* aHeap;
+	aHeap->finalIndex = -1;
+	aHeap->size = 100;
+	aHeap->heap = (Node**)malloc(sizeof(Node*) * aHeap->size);
 	h_node* table = h_init();
 	if (recursive) {
 		// Descend through directory and recursively execute command
@@ -207,6 +210,15 @@ int main(int argc, char** argv) {
 		// Execute command on file (possibly using codebook)
 		if (buildCodebook) {
 			populateHashmap(file, table);
+			Node* temp;
+			int i;
+			for (i = 0; i < h_size; i++) {
+				if (table[i].string) {
+					// create node and insert into heap
+					temp = makeTokenNode(table[i].string, strlen(table[i].string), table[i].freq);
+					insertNode(aHeap, temp);
+				}
+			}
 		} else if (compress) {
 		
 		} else if (decompress) {
@@ -216,6 +228,7 @@ int main(int argc, char** argv) {
 	
 	// Free all nodes
 	if (aHeap) {
+		free(aHeap->heap);
 		freeHeap(aHeap);
 	}
 	// Close all opened files/directories

@@ -19,6 +19,7 @@ typedef struct _node {
 typedef struct _heap {
 	Node** heap; // array representing the heap
 	int finalIndex; // index of final node in heap
+	int size;
 } Heap;
 
 

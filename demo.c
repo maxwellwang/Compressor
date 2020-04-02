@@ -123,8 +123,17 @@ void siftUp(Heap* aHeap) {
 // Inserts node into heap
 void insertNode(Heap* aHeap, Node* aNode) {
 	(aHeap->finalIndex)++;
+	if (aHeap->finalIndex == aHeap->size) {
+		// need to realloc
+		Node** temp = (Node**)malloc(sizeof(Node*) * aHeap->size);
+		memcpy(temp, aHeap->heap, aHeap->size);
+		aHeap->size *= 2;
+		free(aHeap->heap);
+		aHeap->heap = temp;
+	}
 	(aHeap->heap)[aHeap->finalIndex] = aNode;
 	siftUp(aHeap);
+	(aHeap->size)++;
 	return;
 }
 
@@ -186,6 +195,7 @@ Node* extractNode(Heap* aHeap) {
 	(aHeap->heap)[aHeap->finalIndex] = NULL;
 	(aHeap->finalIndex)--;
 	siftDown(aHeap);
+	(aHeap->size)--;
 	return ret;
 }
 

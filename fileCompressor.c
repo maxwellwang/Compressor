@@ -54,6 +54,8 @@ h_node * populateHashmap(int file, h_node* table) {
     tokenLength++;
     status = read(file, &c, 1);
   }
+  // load in last token
+  table = h_add_helper(table, buffer, tokenLength, 1);
   free(buffer);
   return table;
 }
@@ -200,7 +202,6 @@ int main(int argc, char** argv) {
   aHeap->size = 100;
   aHeap->heap = (Node**)malloc(sizeof(Node*) * aHeap->size);
   h_node* table = h_init();
-  int codebook;
   if (recursive) {
     // Descend through directory and recursively execute command
     if (buildCodebook) {

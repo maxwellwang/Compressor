@@ -301,5 +301,6 @@ void freeHeap(Heap* aHeap) {
 		freeNode(currNode);
 		currNode = extractNode(aHeap);
 	}
+	free(aHeap->heap);
 	return;
 }

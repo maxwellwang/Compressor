@@ -43,7 +43,7 @@ void populateHashmap(int file, h_node* table) {
 			// reallocate memory
 			size *= 2;
 			nextBuffer = (char*)malloc(size);
-			memcpy(nextBuffer, buffer, tokenLength);
+			memcpy(nextBuffer, buffer, size);
 			free(buffer);
 			buffer = nextBuffer;
 			nextBuffer = NULL;

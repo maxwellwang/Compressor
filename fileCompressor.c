@@ -192,8 +192,8 @@ int main(int argc, char** argv) {
 	}
 	
 	// Execute desired command
-	Heap* aHeap;
-	aHeap->finalIndex = -1;
+	Heap* aHeap = (Heap*)malloc(sizeof(aHeap));
+	aHeap->finalIndex = -1; // it increments when insertNode is called
 	aHeap->size = 100;
 	aHeap->heap = (Node**)malloc(sizeof(Node*) * aHeap->size);
 	h_node* table = h_init();

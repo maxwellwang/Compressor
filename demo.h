@@ -30,6 +30,9 @@ typedef struct htable_node {
 } h_node;
 
 
+
+void recurse(char * dirname);
+
 //borrowed from Dan Bernstein
 int h_func(char *);
 

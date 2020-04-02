@@ -1,10 +1,58 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "demo.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <string.h>
+#include <errno.h>
 
 int h_size = TABLE_INIT_SIZE;
 int h_items = 0;
+
+
+void recurse(char * dirname) {
+  struct dirent *dp;
+  DIR * dir_struct = opendir(dirname);
+  char * name;
+  char * pathname;
+  char type;
+
+  if (!dir_struct) {
+    printf("Bye %s %s\n", dirname, strerror(errno));
+    return;
+  }
+  
+  while ((dp = readdir(dir_struct)) != NULL) { //skipping opening files
+    name = dp->d_name;
+    type = dp->d_type;
+    if (type == DT_DIR) {
+      if ((strcmp(name,".") * strcmp(name,".."))) {
+	//	printf("Directory found: %s\n", name);
+	pathname = malloc(strlen(dirname) + strlen(name) + 1 + 1);
+	memset(pathname, 0, strlen(dirname) + strlen(name) + 1 + 1);
+	memcpy(pathname, dirname, strlen(dirname));
+	pathname[strlen(pathname)] = '/';
+	memcpy(pathname + strlen(dirname)+1, name, strlen(name));
+	recurse(pathname);
+	free(pathname);
+      }
+    } else if (type == DT_REG) {
+      printf("File found: %s\n", name);
+	     //this is for printout out file content
+	     // ONLY uncomment if there's only normal text files, or else will print out a mess	     
+//      FILE * fd = open(name, O_RDONLY);
+//      char c;
+//      while (read(fd, &c, 1)) {
+//	printf("%c", c);
+//      }
+//      printf("\n");
+    }
+  }
+}
 
 //borrowed from Dan Bernstein
 int h_func(char * str) {

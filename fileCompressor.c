@@ -21,20 +21,21 @@ void populateHashmap(int file, h_node* table) {
 	memset(buffer, 0, 10);
 	char* nextBuffer; // double the buffer if it isn't long enough
 	int tokenLength = 0;
-	int readingWhitespace = 0; // reading whitespace until non-whitespace, or reading non-whitespace until whitespace
 	int size = 10; // buffer size
 	char* head = buffer; // where to write next char
 	int status = read(file, &c, 1);
+	int readingWhitespace = ISWHITESPACE(c); // read whitespace until non-whitespace, read non-whitespace until whitespace
 	while (status) {
 		if (status == -1 && errno == EINTR) {
 			// interrupted, try again
-			while (status == -1 && errno == EINTR) {
-				status = read(file, &c, 1);
-			}
+			status = read(file, &c, 1);
+			continue;
 		}
-		if (ISWHITESPACE(c)) {
+		if (readingWhitespace == !ISWHITESPACE(c)) {
+			// load current token into hashmap
 			
 		}
+		status = read(file, &c, 1);
 	}
 }
 

@@ -27,12 +27,6 @@ h_node * h_init() {
 
 h_node * h_rehash(h_node * h_table);
 
-h_node * h_add_helper(h_node * h_table, char * str, int len, int count) {
-  char * string = malloc(len+1);
-  memset(string, 0, len+1);
-  memcpy(string, str, len);
-  h_add(h_table, char * string, count);
-}
 
 //inserts string if doesn't exist, adds count if it does
 //returns pointer to hash table
@@ -53,6 +47,12 @@ h_node * h_add(h_node * h_table, char * str, int count) {
   return h_table;
 }
 
+h_node * h_add_helper(h_node * h_table, char * str, int len, int count) {
+  char * string = malloc(len+1);
+  memset(string, 0, len+1);
+  memcpy(string, str, len);
+  h_add(h_table, char * string, count);
+}
 
 h_node * h_rehash(h_node * h_table) {
   h_size *= 2;

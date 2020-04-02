@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "hashmap.h"
 #include "demo.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -10,8 +11,42 @@
 #include <string.h>
 #include <errno.h>
 
+char * readFile(char * filename) {
+  int buff_size = 4096;
+  char * huff_buffer = malloc(buff_size);
+  memset(huff_buffer, 0, 4096);
+     
+  int huff_read = 0;
+  int huff_fd = open(filename, O_RDONLY);
+  int huff_status;
+
+  do {
+    huff_status = read(huff_fd, huff_buffer+huff_read, buff_size-1-huff_read);
+    huff_read += huff_status;
+    if (huff_status == 0) {
+      break;
+    }
+    char * huff_tmp = malloc(buff_size*2);
+    memset(huff_tmp, 0, buff_size*2);
+    memcpy(huff_tmp, huff_buffer, huff_read);
+    free(huff_buffer);
+    huff_buffer = huff_tmp;
+    buff_size *= 2;
+  }
+  while (huff_status > 0);
+  close(huff_fd);
+  return huff_buffer;
+}
+
 // Reads file to populate hashmap w/ tokens and frequencies
-h_node * populateHashmap(int file, h_node* table) {
+h_node * populateHashmap(char * filename, h_node* table) {
+  int file = open(filename, O_RDONLY);
+  if (file == -1) {
+    // Open failed -> error
+    printf("Error: Expected to open %s file, failed to open\n", filename);
+    exit(EXIT_FAILURE);
+  }
+  
   char c = '?';
   char* buffer = (char*)malloc(10);
   if (!buffer) {
@@ -70,6 +105,7 @@ int main(int argc, char** argv) {
   int file = 0, codebook = 0;
   DIR* dir = NULL;
   char * dirname;
+  char * filename;
   int argCounter = 1;
   // Loop through arguments to determine course of action
   for (argCounter = 1; argCounter < argc; argCounter++) {
@@ -99,10 +135,10 @@ int main(int argc, char** argv) {
 	recursive = 1;
 	break;
       default:
-		// Invalid flag detected -> error
-		printf("Error: Expected -b, -c, -d, or -R, received %s\n", argv[argCounter]);
-		exit(EXIT_FAILURE);
-	}
+	// Invalid flag detected -> error
+	printf("Error: Expected -b, -c, -d, or -R, received %s\n", argv[argCounter]);
+	exit(EXIT_FAILURE);
+      }
     } else {
       // File/directory detected
       flagSection = 0;
@@ -180,12 +216,13 @@ int main(int argc, char** argv) {
 	  }
 	} else {
 	  // Expecting file
-	  file = open(argv[argCounter], O_RDONLY);
-	  if (file == -1) {
-	    // Open failed -> error
-	    printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
-	    exit(EXIT_FAILURE);
-	  }
+	  filename = argv[argCounter];
+//	  file = open(argv[argCounter], O_RDONLY);
+//	  if (file == -1) {
+//	    // Open failed -> error
+//	    printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
+//	    exit(EXIT_FAILURE);
+//	  }
 	}
       }
     }
@@ -214,26 +251,31 @@ int main(int argc, char** argv) {
 		
     }
   } else {
-  	// Execute command on file (possibly using codebook)
-  	if (buildCodebook) {
-  		table = populateHashmap(file, table);
-  		Node* temp;
-  		int i;
-  		for (i = 0; i < h_size; i++) {
-  			if (table[i].string) {
-  				// create node and insert into heap
-  				temp = makeTokenNode(table[i].string, strlen(table[i].string), table[i].freq);
-  				insertNode(aHeap, temp);
-  			}
-  		}
-  		codebook = open("./HuffmanCodebook", O_WRONLY | O_CREAT, 00600);
+    // Execute command on file (possibly using codebook)
+    if (buildCodebook) {
+      table = populateHashmap(filename, table);
+      Node* temp;
+      int i;
+      for (i = 0; i < h_size; i++) {
+	if (table[i].string) {
+	  // create node and insert into heap
+	  //printf("[%s]\n", table[i].string);
+	  temp = makeTokenNode(table[i].string, strlen(table[i].string), table[i].freq);
+	  insertNode(aHeap, temp);
+	}
+      }
+      codebook = open("./HuffmanCodebook", O_WRONLY | O_CREAT, 00600);
     } else if (compress) {
-		
+      //make it work for any filename
+      char * file = readFile("HuffmanCodebook");
+      int i = 0;
+      for (; i < strlen(file); i++) {
+	printf("[%d]", file[i]);
+      }
     } else if (decompress) {
 		
     }
   }
-	
   // Free all nodes
   if (aHeap) {
     freeHeap(aHeap);

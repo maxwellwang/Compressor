@@ -5,8 +5,6 @@
 #define TABLE_INIT_SIZE 10
 #define LOAD_FACTOR 0.5
 
-int h_size;
-int h_items;
 
 typedef struct _node {
 	char* token; // word
@@ -22,30 +20,7 @@ typedef struct _heap {
 	int size;
 } Heap;
 
-
-typedef struct htable_node {
-  char * string;
-  int hashcode;
-  int freq;
-} h_node;
-
-
-
 void recurse(char * dirname);
-
-//borrowed from Dan Bernstein
-int h_func(char *);
-
-
-h_node * h_init();
-
-h_node * h_rehash(h_node * h_table);
-
-h_node* h_add_helper(h_node*, char*, int, int);
-
-//inserts string if doesn't exist, adds count if it does
-//returns pointer to hash table
-h_node * h_add(h_node *, char *, int);
 
 // Makes token node from name and frequency
 Node* makeTokenNode(char*, int, int);

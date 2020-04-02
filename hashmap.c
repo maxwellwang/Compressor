@@ -2,6 +2,11 @@
 #include <stdlib.h>
 #include "hashmap.h"
 #include <string.h>
+//
+
+int h_size = TABLE_INIT_SIZE;
+int h_items = 0;
+
 
 //borrowed from Dan Bernstein
 int h_func(char * str) {
@@ -25,8 +30,7 @@ h_node * h_init() {
   return p;  
 }
 
-h_node * h_rehash(h_node * h_table);
-
+//h_node * h_rehash(h_node * h_table);
 
 //inserts string if doesn't exist, adds count if it does
 //returns pointer to hash table
@@ -51,7 +55,7 @@ h_node * h_add_helper(h_node * h_table, char * str, int len, int count) {
   char * string = malloc(len+1);
   memset(string, 0, len+1);
   memcpy(string, str, len);
-  h_add(h_table, char * string, count);
+  return h_add(h_table, string, count);
 }
 
 h_node * h_rehash(h_node * h_table) {

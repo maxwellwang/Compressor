@@ -19,7 +19,7 @@ void populateHashmap(int file, h_node* table) {
 		exit(EXIT_FAILURE);
 	}
 	memset(buffer, 0, 10);
-	char* nextBuffer; // double the buffer if it isn't long enough
+	char* nextBuffer = NULL; // double the buffer if it isn't long enough
 	int tokenLength = 0;
 	int size = 10; // buffer size
 	char* head = buffer; // where to write next char
@@ -33,10 +33,26 @@ void populateHashmap(int file, h_node* table) {
 		}
 		if (readingWhitespace == !ISWHITESPACE(c)) {
 			// load current token into hashmap
-			
+			table = h_add_helper(table, buffer, tokenLength, 1);
+			tokenLength = 0;
+			head = buffer; // ready to read next token
 		}
+		readingWhitespace = ISWHITESPACE(c);
+		// add char to buffer, resize if necessary
+		if (tokenLength + 1 > size) {
+			// reallocate memory
+			size *= 2;
+			nextBuffer = (char*)malloc(size);
+			memcpy(nextBuffer, buffer, tokenLength);
+			free(buffer);
+			buffer = nextBuffer;
+			nextBuffer = NULL;
+		}
+		*head = c;
+		tokenLength++;
 		status = read(file, &c, 1);
 	}
+	free(buffer);
 }
 
 int main(int argc, char** argv) {
@@ -175,10 +191,11 @@ int main(int argc, char** argv) {
 	
 	// Execute desired command
 	Heap* aHeap = NULL;
+	h_node* table = h_init();
 	if (recursive) {
 		// Descend through directory and recursively execute command
 		if (buildCodebook) {
-		
+			
 		} else if (compress) {
 		
 		} else if (decompress) {
@@ -187,7 +204,7 @@ int main(int argc, char** argv) {
 	} else {
 		// Execute command on file (possibly using codebook)
 		if (buildCodebook) {
-		
+			populateHashmap(file, table);
 		} else if (compress) {
 		
 		} else if (decompress) {

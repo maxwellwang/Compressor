@@ -37,6 +37,8 @@ h_node * h_init();
 
 h_node * h_rehash(h_node * h_table);
 
+h_node* h_add_helper(h_node*, char*, int, int);
+
 //inserts string if doesn't exist, adds count if it does
 //returns pointer to hash table
 h_node * h_add(h_node *, char *, int);

@@ -1,11 +1,8 @@
-all: fileCompressor.c huffman.o hashmap.o
-	gcc -o fileCompressor fileCompressor.c huffman.o hashmap.o
+all: fileCompressor.c demo.o
+	gcc -o fileCompressor fileCompressor.c demo.o
 
-huffman.o: huffman.c
-	gcc -c huffman.c
-
-hashmap.o: hashmap.c
-	gcc -c hashmap.c
+demo.o: demo.c
+	gcc -c demo.c
 
 clean:
-	rm fileCompressor; rm huffman.o; rm hashmap.o
+	rm fileCompressor; rm demo.o

@@ -57,7 +57,7 @@ h_node * h_add_helper(h_node * h_table, char * str, int len, int count) {
   char * string = (char*)malloc(len+1);
   memset(string, 0, len+1);
   memcpy(string, str, len);
-  h_add(h_table, string, count);
+  return h_add(h_table, string, count);
 }
 
 

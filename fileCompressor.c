@@ -33,7 +33,9 @@ void populateHashmap(int file, h_node* table) {
 		}
 		if (readingWhitespace == !ISWHITESPACE(c)) { // change from whitespace to non-whitespace or vice versa
 			// load current token into hashmap
+		  printf("Test: [%c] %s %d\n", buffer[0], buffer, tokenLength);
 			table = h_add_helper(table, buffer, tokenLength, 1);
+			printf("ee\n");
 			tokenLength = 0;
 			head = buffer; // ready to read next token
 		}

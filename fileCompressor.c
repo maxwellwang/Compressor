@@ -31,7 +31,7 @@ void populateHashmap(int file, h_node* table) {
 			status = read(file, &c, 1);
 			continue;
 		}
-		if (readingWhitespace == !ISWHITESPACE(c)) {
+		if (readingWhitespace == !ISWHITESPACE(c)) { // change from whitespace to non-whitespace or vice versa
 			// load current token into hashmap
 			table = h_add_helper(table, buffer, tokenLength, 1);
 			tokenLength = 0;
@@ -47,8 +47,10 @@ void populateHashmap(int file, h_node* table) {
 			free(buffer);
 			buffer = nextBuffer;
 			nextBuffer = NULL;
+			head = buffer + tokenLength;
 		}
 		*head = c;
+		head++;
 		tokenLength++;
 		status = read(file, &c, 1);
 	}

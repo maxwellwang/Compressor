@@ -11,8 +11,6 @@
 #include <string.h>
 #include <errno.h>
 
-int escapeLength = 1; // '!' is default, add more '!' to avoid confusion with '!'s appearing in files
-
 char * readFile(char * filename) {
   int buff_size = 4096;
   char * huff_buffer = (char*)malloc(buff_size);
@@ -49,7 +47,7 @@ char * readFile(char * filename) {
 }
 
 // Reads file to populate hashmap w/ tokens and frequencies, also sets escapeLength
-h_node * populateHashmap(char * filename, h_node* table) {
+h_node * populateHashmap(char * filename, h_node* table, int* escapeLength) {
   int file = open(filename, O_RDONLY);
   if (file == -1) {
     // Open failed -> error
@@ -74,6 +72,13 @@ h_node * populateHashmap(char * filename, h_node* table) {
   int consecEscapes = 1;
   int maxConsecEscapes = consecEscapes; // escape length (# of !s) must be greater than this to avoid confusion
   int foundEscapeChar = 0;
+  /*char* escapeSequence = (char*)malloc(10);
+  if (!escapeSequence) {
+  	printf("Error: Malloc failed\n");
+  	exit(EXIT_FAILURE);
+  }
+  char* escapeHead;
+  int escapeSequenceLength = 0;*/
   while (status) {
     if (status == -1 && errno == EINTR) {
       // interrupted, try again
@@ -93,7 +98,29 @@ h_node * populateHashmap(char * filename, h_node* table) {
     }
     if (readingWhitespace == !ISWHITESPACE(c)) { // change from whitespace to non-whitespace or vice versa
       // load current token into hashmap
-      table = h_add_helper(table, buffer, tokenLength, 1);
+      if (ISWHITESPACE(c)) {
+      	// put escape sequence in front
+      	
+      	switch (c) {
+      		case '\n':
+      			break;
+      		case ' ':
+      			break;
+      		case '\t':
+      			break;
+      		case '\v':
+      			break;
+      		case '\f':
+      			break;
+      		case '\r':
+      			break;
+      		case default:
+      			printf("Shouldn't be here...\n");
+      			break;
+      	}
+      } else {
+      	table = h_add_helper(table, buffer, tokenLength, 1);
+      }
       tokenLength = 0;
       head = buffer; // ready to read next token
     }
@@ -118,9 +145,12 @@ h_node * populateHashmap(char * filename, h_node* table) {
   if (consecEscapes > maxConsecEscapes) {
   	maxConsecEscapes = consecEscapes;
   }
-  escapeLength = maxConsecEscapes + 1;
   if (!foundEscapeChar) {
-  	escapeLength = 1;
+  	maxConsecEscapes = 0;
+  }
+  if (maxConsecEscapes + 1 > *escapeLength) {
+  	// new escape length
+  	*escapeLength = maxConsecEscapes + 1;
   }
   // load in last token
   table = h_add_helper(table, buffer, tokenLength, 1);
@@ -333,6 +363,7 @@ int main(int argc, char** argv) {
   aHeap->size = 100;
   aHeap->heap = (Node**)malloc(sizeof(Node*) * aHeap->size);
   h_node* table = h_init();
+  int escapeLength = 1;
   if (recursive) {
     // Descend through directory and recursively execute command
     if (buildCodebook) {
@@ -347,7 +378,7 @@ int main(int argc, char** argv) {
   } else {
     // Execute command on file (possibly using codebook)
     if (buildCodebook) {
-		table = populateHashmap(filename, table);
+		table = populateHashmap(filename, table, &escapeLength);
       	Node* temp;
       int i;
       	for (i = 0; i < h_size; i++) {
@@ -369,7 +400,7 @@ int main(int argc, char** argv) {
 	char* head = pathcode;
 	int size = 10;
 	int pathcodeLength = 0;
-      recursivePopulate(codebook, (aHeap->heap)[0], pathcode, head, size, pathcodeLength);
+      recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, size, pathcodeLength);
     } else if (compress) {
       //make it work for any filename
       char * file = readFile("HuffmanCodebook");

@@ -41,7 +41,7 @@ void siftDown(Heap*);
 // Extracts minimum node from heap
 Node* extractNode(Heap*);
 
-// Builds tree from 2 nodes
+// Builds tree from 2 nodes, a helper for buildHuffmanTree
 Node* buildTree(Node*, Node*);
 
 // Builds Huffman tree from heap

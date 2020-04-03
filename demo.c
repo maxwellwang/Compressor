@@ -99,7 +99,6 @@ void siftUp(Heap* aHeap) {
 void insertNode(Heap* aHeap, Node* aNode) {
 	(aHeap->finalIndex)++;
 	if (aHeap->finalIndex == aHeap->size) {
-	  printf("doubled\n");
 		// need to realloc
 		Node** temp = (Node**)malloc(sizeof(Node*) * aHeap->size);
 		memcpy(temp, aHeap->heap, aHeap->size);

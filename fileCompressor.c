@@ -72,13 +72,6 @@ h_node * populateHashmap(char * filename, h_node* table, int* escapeLength) {
   int consecEscapes = 1;
   int maxConsecEscapes = consecEscapes; // escape length (# of !s) must be greater than this to avoid confusion
   int foundEscapeChar = 0;
-  /*char* escapeSequence = (char*)malloc(10);
-  if (!escapeSequence) {
-  	printf("Error: Malloc failed\n");
-  	exit(EXIT_FAILURE);
-  }
-  char* escapeHead;
-  int escapeSequenceLength = 0;*/
   while (status) {
     if (status == -1 && errno == EINTR) {
       // interrupted, try again
@@ -98,29 +91,7 @@ h_node * populateHashmap(char * filename, h_node* table, int* escapeLength) {
     }
     if (readingWhitespace == !ISWHITESPACE(c)) { // change from whitespace to non-whitespace or vice versa
       // load current token into hashmap
-      if (ISWHITESPACE(c)) {
-      	// put escape sequence in front
-      	
-      	switch (c) {
-      		case '\n':
-      			break;
-      		case ' ':
-      			break;
-      		case '\t':
-      			break;
-      		case '\v':
-      			break;
-      		case '\f':
-      			break;
-      		case '\r':
-      			break;
-      		case default:
-      			printf("Shouldn't be here...\n");
-      			break;
-      	}
-      } else {
-      	table = h_add_helper(table, buffer, tokenLength, 1);
-      }
+      table = h_add_helper(table, buffer, tokenLength, 1);
       tokenLength = 0;
       head = buffer; // ready to read next token
     }

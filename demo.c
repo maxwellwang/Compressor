@@ -28,7 +28,11 @@ void recurse(char * dirname) {
     if (type == DT_DIR) {
       if ((strcmp(name,".") * strcmp(name,".."))) {
 	//	printf("Directory found: %s\n", name);
-	pathname = malloc(strlen(dirname) + strlen(name) + 1 + 1);
+	pathname = (char*)malloc(strlen(dirname) + strlen(name) + 1 + 1);
+	if (!pathname) {
+		printf("Error: Malloc failed\n");
+		exit(EXIT_FAILURE);
+	}
 	memset(pathname, 0, strlen(dirname) + strlen(name) + 1 + 1);
 	memcpy(pathname, dirname, strlen(dirname));
 	pathname[strlen(pathname)] = '/';
@@ -67,6 +71,7 @@ Node* makeTokenNode(char* token, int tokenLength, int frequency) {
 	temp->frequency = frequency;
 	temp->left = NULL;
 	temp->right = NULL;
+	temp->tokenLength = tokenLength;
 	return temp;
 }
 
@@ -177,6 +182,7 @@ Node* buildTree(Node* nodeA, Node* nodeB) {
 		exit(EXIT_FAILURE);
 	}
 	temp->token = NULL;
+	temp->tokenLength = 0;
 	temp->frequency = nodeA->frequency + nodeB->frequency;
 	temp->left = nodeA;
 	temp->right = nodeB;

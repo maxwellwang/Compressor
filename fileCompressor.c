@@ -11,9 +11,15 @@
 #include <string.h>
 #include <errno.h>
 
+int escapeLength = 1; // '!' is default, add more '!' to avoid confusion with '!'s appearing in files
+
 char * readFile(char * filename) {
   int buff_size = 4096;
-  char * huff_buffer = malloc(buff_size);
+  char * huff_buffer = (char*)malloc(buff_size);
+  if (!huff_buffer) {
+  	printf("Error: Malloc failed\n");
+  	exit(EXIT_FAILURE);
+  }
   memset(huff_buffer, 0, 4096);
      
   int huff_read = 0;
@@ -26,7 +32,11 @@ char * readFile(char * filename) {
     if (huff_status == 0) {
       break;
     }
-    char * huff_tmp = malloc(buff_size*2);
+    char * huff_tmp = (char*)malloc(buff_size*2);
+    if (!huff_tmp) {
+    	printf("Error: Malloc failed\n");
+    	exit(EXIT_FAILURE);
+    }
     memset(huff_tmp, 0, buff_size*2);
     memcpy(huff_tmp, huff_buffer, huff_read);
     free(huff_buffer);
@@ -38,7 +48,7 @@ char * readFile(char * filename) {
   return huff_buffer;
 }
 
-// Reads file to populate hashmap w/ tokens and frequencies
+// Reads file to populate hashmap w/ tokens and frequencies, also sets escapeLength
 h_node * populateHashmap(char * filename, h_node* table) {
   int file = open(filename, O_RDONLY);
   if (file == -1) {
@@ -48,23 +58,38 @@ h_node * populateHashmap(char * filename, h_node* table) {
   }
   
   char c = '?';
+  char pastC = '?'; // need this to count consecutive escape chars
   char* buffer = (char*)malloc(10);
   if (!buffer) {
     printf("Error: Malloc failed\n");
     exit(EXIT_FAILURE);
   }
-  memset(buffer, 0, 10);
+  memset(buffer, '\0', 10);
   char* nextBuffer = NULL; // double the buffer if it isn't long enough
   int tokenLength = 0;
   int size = 10; // buffer size
   char* head = buffer; // where to write next char
   int status = read(file, &c, 1);
   int readingWhitespace = ISWHITESPACE(c); // read whitespace until non-whitespace, read non-whitespace until whitespace
+  int consecEscapes = 1;
+  int maxConsecEscapes = consecEscapes; // escape length (# of !s) must be greater than this to avoid confusion
+  int foundEscapeChar = 0;
   while (status) {
     if (status == -1 && errno == EINTR) {
       // interrupted, try again
       status = read(file, &c, 1);
       continue;
+    }
+    if (c == '!') {
+    	foundEscapeChar = 1;
+    }
+    if (c == '!' && pastC == '!') {
+    	consecEscapes++;
+    } else if (c != '!' && pastC == '!') {
+    	if (consecEscapes > maxConsecEscapes) {
+    		maxConsecEscapes = consecEscapes;
+    	}
+    	consecEscapes = 1;
     }
     if (readingWhitespace == !ISWHITESPACE(c)) { // change from whitespace to non-whitespace or vice versa
       // load current token into hashmap
@@ -87,12 +112,78 @@ h_node * populateHashmap(char * filename, h_node* table) {
     *head = c;
     head++;
     tokenLength++;
+    pastC = c;
     status = read(file, &c, 1);
+  }
+  if (consecEscapes > maxConsecEscapes) {
+  	maxConsecEscapes = consecEscapes;
+  }
+  escapeLength = maxConsecEscapes + 1;
+  if (!foundEscapeChar) {
+  	escapeLength = 1;
   }
   // load in last token
   table = h_add_helper(table, buffer, tokenLength, 1);
   free(buffer);
   return table;
+}
+
+// Recursively navigates Huffman tree to populate codebook
+void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, int size, int pathcodeLength) {
+	char* temp;
+	if (!aNode) {
+		return;
+	}
+	// go left
+	*head = '0';
+	if (pathcodeLength + 1 > size) {
+		// double pathcode length
+		temp = (char*)malloc(size * 2);
+		if (!temp) {
+			printf("Error: Malloc failed\n");
+			exit(EXIT_SUCCESS);
+		}
+		memcpy(temp, pathcode, size);
+		size *= 2;
+		free(pathcode);
+		pathcode = temp;
+		head = pathcode + pathcodeLength;
+		temp = NULL;
+	}
+	pathcodeLength++;
+	head++;
+	recursivePopulate(codebook, aNode->left, pathcode, head, size, pathcodeLength);
+	// back up
+	pathcodeLength--;
+	head--;
+	// Use token and pathcode, the actually important part
+	write(codebook, pathcode, pathcodeLength);
+	write(codebook, "\t", 1);
+	write(codebook, aNode->token, aNode->tokenLength);
+	write(codebook, "\n", 1);
+	// go right
+	*head = '1';
+	if (pathcodeLength + 1 > size) {
+		// double pathcode length
+		temp = (char*)malloc(size * 2);
+		if (!temp) {
+			printf("Error: Malloc failed\n");
+			exit(EXIT_SUCCESS);
+		}
+		memcpy(temp, pathcode, size);
+		size *= 2;
+		free(pathcode);
+		pathcode = temp;
+		head = pathcode + pathcodeLength;
+		temp = NULL;
+	}
+	pathcodeLength++;
+	head++;
+	recursivePopulate(codebook, aNode->right, pathcode, head, size, pathcodeLength);
+	// back up
+	pathcodeLength--;
+	head--;
+	return;
 }
 
 int main(int argc, char** argv) {
@@ -253,18 +344,29 @@ int main(int argc, char** argv) {
   } else {
     // Execute command on file (possibly using codebook)
     if (buildCodebook) {
-      table = populateHashmap(filename, table);
-      Node* temp;
+		table = populateHashmap(filename, table);
+      	Node* temp;
       int i;
-      for (i = 0; i < h_size; i++) {
-	if (table[i].string) {
-	  // create node and insert into heap
-	  //printf("[%s]\n", table[i].string);
-	  temp = makeTokenNode(table[i].string, strlen(table[i].string), table[i].freq);
-	  insertNode(aHeap, temp);
-	}
+      	for (i = 0; i < h_size; i++) {
+			if (table[i].string) {
+			  // create node and insert into heap
+			  //printf("[%s]\n", table[i].string);
+			  temp = makeTokenNode(table[i].string, strlen(table[i].string), table[i].freq);
+			  insertNode(aHeap, temp);
+			}
+   	   }
+      codebook = open("./HuffmanCodebook", O_RDWR | O_CREAT, 00600);
+      // escape sequence
+      int ind;
+      for (ind = 0; ind < escapeLength; ind++) {
+      	write(codebook, "!", 1);
       }
-      codebook = open("./HuffmanCodebook", O_WRONLY | O_CREAT, 00600);
+      write(codebook, "\n", 1);
+      char* pathcode = (char*)malloc(10);
+	char* head = pathcode;
+	int size = 10;
+	int pathcodeLength = 0;
+      recursivePopulate(codebook, (aHeap->heap)[0], pathcode, head, size, pathcodeLength);
     } else if (compress) {
       //make it work for any filename
       char * file = readFile("HuffmanCodebook");

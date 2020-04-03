@@ -8,6 +8,7 @@
 
 typedef struct _node {
 	char* token; // word
+	int tokenLength;
 	int frequency; // frequency of word or of tree
 	struct _node* left; // only applicable for tree
 	struct _node* right; // only applicable for tree

@@ -157,10 +157,13 @@ void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, in
 	pathcodeLength--;
 	head--;
 	// Use token and pathcode, the actually important part
-	write(codebook, pathcode, pathcodeLength);
-	write(codebook, "\t", 1);
-	write(codebook, aNode->token, aNode->tokenLength);
-	write(codebook, "\n", 1);
+	if (aNode->token) {
+		// has a token, add to codebook
+		write(codebook, pathcode, pathcodeLength);
+		write(codebook, "\t", 1);
+		write(codebook, aNode->token, aNode->tokenLength);
+		write(codebook, "\n", 1);
+	}
 	// go right
 	*head = '1';
 	if (pathcodeLength + 1 > size) {

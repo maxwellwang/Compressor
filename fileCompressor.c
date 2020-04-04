@@ -346,6 +346,108 @@ char * nextToken(char * string, int space) {
   //  printf("DEBUG: %s %i\n", token, i);
   return token;
 }
+void decompressFile(char * filename, char * codebookname, h_node * table) {
+  char * file = readFile(codebookname);
+  int i, j;
+  char * token = "lol";
+  char * token2;
+  char * escape;
+  int len = 0;
+  int maxlen = 0;
+  int decode;
+  char * filenameC = malloc(strlen(filename) + 1 - 4);
+            
+  escape = nextToken(file + len, 0);
+  len += strlen(escape) + 1;
+  while (strlen(token)) {
+    token = nextToken(file + len, 0);
+    maxlen = strlen(token) > maxlen ? strlen(token) : maxlen;
+    len += strlen(token) + 1;
+    token2 = nextToken(file + len, 0);
+    len += strlen(token2) + 1;
+    if (!strlen(token)) {
+      break;
+    }
+    table = h_add(table, token, token2, 0);
+  }
+
+  file = readFile(filename);
+  len = (strlen(file));
+  memcpy(filenameC, filename, strlen(filename)-4);
+  filenameC[strlen(filename)-4] = 0;
+  decode = open(filenameC, O_RDWR | O_CREAT, 00600);
+  char * code = malloc(maxlen+1);
+  char * word;
+  char * ws = malloc(2);
+  ws[1] = 0;
+  for (i = 0; i < len; i++) {
+    for (j = 0; j < maxlen+1; j++) {
+      memset(code, 0, maxlen+1);
+      memcpy(code, file+i, j);
+      word = h_get(table, code);
+      if (word) {
+	if (strncmp(word, escape, strlen(escape)) == 0) {
+	  ws[0] = strToDelim(word, escape);
+	  write(decode, ws, 1);
+	} else {
+	  write(decode, word, strlen(word));
+	}
+	i += j-1;
+	break;
+      }
+    }
+  }
+}
+
+void compressFile(char * filename, char * codebookname, h_node * table) {
+  char * file = readFile(codebookname);
+  char * token = "lol";
+  char * token2;
+  char * escape;
+  int len = 0;
+  int encode;
+  char * filenameC = malloc(strlen(filename) + 1 + 4);
+      
+      
+  escape = nextToken(file + len, 0);
+  //    printf("Escape char: %s\n", escape);
+  len += strlen(escape) + 1;
+  while (strlen(token)) {
+    token = nextToken(file + len, 0);
+    len += strlen(token) + 1;
+    token2 = nextToken(file + len, 0);
+    len += strlen(token2) + 1;
+    if (!strlen(token)) {
+      break;
+    }
+    table = h_add(table, token2, token, 0);
+  }
+  file = readFile(filename);
+  delim = '0';
+  len = 0;
+
+  memcpy(filenameC, filename, strlen(filename));
+  memcpy(filenameC+strlen(filename), ".hcz", 4);
+  filenameC[strlen(filename)+4] = 0;
+  encode = open(filenameC, O_RDWR | O_CREAT, 00600);
+      
+  while (delim) {
+    token = nextToken(file + len, 1);
+    len+=strlen(token)+1;
+    token2 = delimToStr(delim, escape);
+    if (strlen(token)) {
+      token = h_get(table, token);
+      write(encode, token, strlen(token));
+    }
+    if (strlen(token2)) {
+      token2 = h_get(table, token2);
+      write(encode, token2, strlen(token2));
+    }
+
+  }
+  write(encode, "\n", 1);
+  close(encode);
+}
 
 int main(int argc, char** argv) {
   if (argc < 3) {
@@ -358,6 +460,7 @@ int main(int argc, char** argv) {
   DIR* dir = NULL;
   char * dirname;
   char * filename;
+  char * codebookname;
   int argCounter = 1;
   // Loop through arguments to determine course of action
   for (argCounter = 1; argCounter < argc; argCounter++) {
@@ -444,12 +547,13 @@ int main(int argc, char** argv) {
 	  }
 	} else {
 	  // Expecting codebook file
-	  codebook = open(argv[argCounter], O_RDONLY);
-	  if (codebook == -1) {
-	    // Open failed -> error
-	    printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
-	    exit(EXIT_FAILURE);
-	  }
+	  codebookname = argv[argCounter];
+//	  codebook = open(argv[argCounter], O_RDONLY);
+//	  if (codebook == -1) {
+//	    // Open failed -> error
+//	    printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
+//	    exit(EXIT_FAILURE);
+//	  }
 	}
       } else {
 	// Expecting one file/directory
@@ -537,108 +641,9 @@ int main(int argc, char** argv) {
       int pathcodeLength = 0;
       recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, size, pathcodeLength);
     } else if (compress) {
-      char * file = readFile("HuffmanCodebook");
-      char * token = "lol";
-      char * token2;
-      char * escape;
-      int len = 0;
-      int encode;
-      char * filenameC = malloc(strlen(filename) + 1 + 4);
-      
-      
-      escape = nextToken(file + len, 0);
-      //    printf("Escape char: %s\n", escape);
-      len += strlen(escape) + 1;
-      while (strlen(token)) {
-	token = nextToken(file + len, 0);
-	len += strlen(token) + 1;
-	token2 = nextToken(file + len, 0);
-	len += strlen(token2) + 1;
-	if (!strlen(token)) {
-	  break;
-	}
-	table = h_add(table, token2, token, 0);
-      }
-      file = readFile(filename);
-      delim = '0';
-      len = 0;
-
-      memcpy(filenameC, filename, strlen(filename));
-      memcpy(filenameC+strlen(filename), ".hcz", 4);
-      filenameC[strlen(filename)+4] = 0;
-      encode = open(filenameC, O_RDWR | O_CREAT, 00600);
-      
-      while (delim) {
-	token = nextToken(file + len, 1);
-	len+=strlen(token)+1;
-	token2 = delimToStr(delim, escape);
-	if (strlen(token)) {
-	  token = h_get(table, token);
-	  write(encode, token, strlen(token));
-	}
-	if (strlen(token2)) {
-	  token2 = h_get(table, token2);
-	  write(encode, token2, strlen(token2));
-	}
-
-      }
-      write(encode, "\n", 1);
-      close(encode);      
+      compressFile(filename, codebookname, table);
     } else if (decompress) {
-      char * file = readFile("HuffmanCodebook");
-      int i, j;
-      char * token = "lol";
-      char * token2;
-      char * escape;
-      int len = 0;
-      int maxlen = 0;
-      int decode;
-      char * filenameC = malloc(strlen(filename) + 1 - 4);
-            
-      escape = nextToken(file + len, 0);
-      len += strlen(escape) + 1;
-      while (strlen(token)) {
-	token = nextToken(file + len, 0);
-	maxlen = strlen(token) > maxlen ? strlen(token) : maxlen;
-	len += strlen(token) + 1;
-	token2 = nextToken(file + len, 0);
-	len += strlen(token2) + 1;
-	if (!strlen(token)) {
-	  break;
-	}
-	table = h_add(table, token, token2, 0);
-      }
-      //or (i = 0; i < h_size; i++) {
-      //	if (table[i].string != NULL) {
-      //	  printf("H[%s|%s]\n", table[i].string, table[i].freq);
-      //	}
-      //
-      file = readFile(filename);
-      len = (strlen(file));
-      memcpy(filenameC, filename, strlen(filename)-4);
-      filenameC[strlen(filename)-4] = 0;
-      decode = open(filenameC, O_RDWR | O_CREAT, 00600);
-      char * code = malloc(maxlen+1);
-      char * word;
-      char * ws = malloc(2);
-      ws[1] = 0;
-      for (i = 0; i < len; i++) {
-	for (j = 0; j < maxlen+1; j++) {
-	  memset(code, 0, maxlen+1);
-	  memcpy(code, file+i, j);
-	  word = h_get(table, code);
-	  if (word) {
-	    if (strncmp(word, escape, strlen(escape)) == 0) {
-	      ws[0] = strToDelim(word, escape);
-	      write(decode, ws, 1);
-	    } else {
-	      write(decode, word, strlen(word));
-	    }
-	    i += j-1;
-	    break;
-	  }
-	}
-      }
+      decompressFile(filename, codebookname, table);
     }
       
   }

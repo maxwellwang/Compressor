@@ -358,6 +358,7 @@ int main(int argc, char** argv) {
   DIR* dir = NULL;
   char * dirname;
   char * filename;
+  char * codebookname;
   int argCounter = 1;
   // Loop through arguments to determine course of action
   for (argCounter = 1; argCounter < argc; argCounter++) {
@@ -426,6 +427,7 @@ int main(int argc, char** argv) {
 	  // Expecting file/directory to compress/decompress
 	  if (recursive) {
 	    // Expecting directory
+	    //TODO
 	    dir = opendir(argv[argCounter]);
 	    if (!dir) {
 	      // Open failed -> error
@@ -444,12 +446,13 @@ int main(int argc, char** argv) {
 	  }
 	} else {
 	  // Expecting codebook file
-	  codebook = open(argv[argCounter], O_RDONLY);
-	  if (codebook == -1) {
-	    // Open failed -> error
-	    printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
-	    exit(EXIT_FAILURE);
-	  }
+	  codebookname = argv[argCounter];
+//odebook = open(argv[argCounter], O_RDONLY);
+//f (codebook == -1) {
+// // Open failed -> error
+// printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
+// exit(EXIT_FAILURE);
+//
 	}
       } else {
 	// Expecting one file/directory
@@ -537,7 +540,12 @@ int main(int argc, char** argv) {
       int pathcodeLength = 0;
       recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, size, pathcodeLength);
     } else if (compress) {
+<<<<<<< Updated upstream
       char * file = readFile("HuffmanCodebook");
+=======
+      char * file = readFile(codebookname);
+      int i = 0;
+>>>>>>> Stashed changes
       char * token = "lol";
       char * token2;
       char * escape;
@@ -585,7 +593,7 @@ int main(int argc, char** argv) {
       write(encode, "\n", 1);
       close(encode);      
     } else if (decompress) {
-      char * file = readFile("HuffmanCodebook");
+      char * file = readFile(codebookname);
       int i, j;
       char * token = "lol";
       char * token2;
@@ -608,11 +616,7 @@ int main(int argc, char** argv) {
 	}
 	table = h_add(table, token, token2, 0);
       }
-      //or (i = 0; i < h_size; i++) {
-      //	if (table[i].string != NULL) {
-      //	  printf("H[%s|%s]\n", table[i].string, table[i].freq);
-      //	}
-      //
+
       file = readFile(filename);
       len = (strlen(file));
       memcpy(filenameC, filename, strlen(filename)-4);

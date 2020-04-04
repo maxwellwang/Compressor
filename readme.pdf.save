@@ -1,5 +1,0 @@
-- “readme.pdf” that describes the design and implementation of your fileCompressor
-
-include an analysis of the time and space usage and complexity of your program. You do not
-need to analyze every size function, but you should analyze the overall program's time and
-space used as a function of the size of the input.

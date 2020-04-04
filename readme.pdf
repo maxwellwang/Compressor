@@ -1,6 +1,6 @@
 # File Compressor
 
-File Compressor is a program for losslessly compressing/decompressing text files.
+File Compressor is a program for losslessly compressing/decompressing files.
 
 ## Description
 
@@ -25,9 +25,30 @@ directories within the directory.
 ./fileCompressor -R -d someDirectory someCodebook
 ```
 
+## Implementation
+
+**Build Codebook**
+
+
+**Compress**
+
+
+**Decompress**
+
+
 ## Complexity
 
-Let n be the number of tokens found. Let m be the number of unique tokens. We will analyze the time and space complexities for each
-of the 3 basic commands.
+Let n be the number of tokens found. Let m be the number of unique tokens found. We will analyze the time and space complexities for
+each of the 3 basic commands.
 
+**Build codebook**
+Time:
+Space:
 
+**Compress**
+Time:
+Space:
+
+**Decompress**
+Time:
+Space:

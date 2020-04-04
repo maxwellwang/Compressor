@@ -260,10 +260,49 @@ void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, in
   return;
 }
 
-char * nextToken(char * string) {
+char * delimToStr(char delim, char * escape) {
+  char * str;
+  if (delim == '\n' || delim == '\t' || delim == '\v' || delim == '\r' || delim == '\f') {
+    int len = strlen(escape);
+    str = malloc(len + 2);
+    memcpy(str, escape, len);
+    switch (delim) {
+      case '\n':
+	delim = 'n';
+	break;
+      case '\t':
+	delim = 't';
+	break;
+      case '\v':
+	delim = 'v';
+	break;
+      case '\f':
+	delim = 'f';
+	break;
+      case '\r':
+	delim = 'r';
+	break;
+      default:
+	break;
+
+    }
+    str[len] = delim;
+    str[len+1] = 0;
+  } else {
+    str = malloc(2);
+    str[0] = delim;
+    str[1] = 0;
+  }
+  return str;
+}
+
+char delim;
+char * nextToken(char * string, int space) {
   int i = 0;
+  delim = 0;
   for (; i < strlen(string); i++) {
-    if (string[i] == '\n' || string[i] == '\t' || string[i] == 0) {
+    if (string[i] == '\n' || string[i] == '\t' || string[i] == '\v' || string[i] == '\r' || string[i] == '\f' || string[i] == 0 || (space && string[i] == ' ')) {
+      delim = string[i];
       break;
     }
   }
@@ -361,7 +400,8 @@ int main(int argc, char** argv) {
 	    }
 	  } else {
 	    // Expecting file
-	    file = open(argv[argCounter], O_RDONLY | O_NONBLOCK);
+	    filename = argv[argCounter];
+	    //	    file = open(argv[argCounter], O_RDONLY | O_NONBLOCK);
 	    if (file == -1) {
 	      // Open failed -> error
 	      printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
@@ -463,39 +503,66 @@ int main(int argc, char** argv) {
       int pathcodeLength = 0;
       recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, size, pathcodeLength);
     } else if (compress) {
-      //make it work for any filename
       char * file = readFile("HuffmanCodebook");
       int i = 0;
-      //read in escape char
       char * token = "lol";
       char * token2;
       char * escape;
       int len = 0;
       
-      escape = nextToken(file + len);
-      printf("Escape char: %s\n", escape);
+      escape = nextToken(file + len, 0);
+      //    printf("Escape char: %s\n", escape);
       len += strlen(escape) + 1;
       while (strlen(token)) {
-	token = nextToken(file + len);
+	token = nextToken(file + len, 0);
 	len += strlen(token) + 1;
-	token2 = nextToken(file + len);
+	token2 = nextToken(file + len, 0);
 	len += strlen(token2) + 1;
 	if (!strlen(token)) {
 	  break;
 	}
-	table = h_add(table, token, token2);
+	table = h_add(table, token2, token, 0);
 	//	printf("K:[%s] V:[%s]\n", token, token2);
       }
-      for (i = 0; i < h_size; i++) {
-	if (table[i].string) {
-	  // create node and insert into heap
-	  printf("[%s][%s]\n", table[i].string, table[i].freq);
-	}
-      }
-      //printf("%s\n", file+2);
+//      for (i = 0; i < h_size; i++) {
+//	if (table[i].string) {
+//	  // create node and insert into heap
+//	  printf("[%s][%s][%s]\n", table[i].string, table[i].freq, h_get(table, table[i].string));
+//	}
+//      }
+      file = readFile(filename);
+      delim = '0';
+      len = 0;
+
+      int decode;
+      char * filenameC = malloc(strlen(filename) + 1 + 4);
       
+      memcpy(filenameC, filename, strlen(filename));
+      memcpy(filenameC+strlen(filename), ".hcz", 4);
+      filenameC[strlen(filename)+4] = 0;
+      decode = open(filenameC, O_RDWR | O_CREAT, 00600);
+      
+      while (delim) {
+	token = nextToken(file + len, 1);
+	len+=strlen(token)+1;
+	token2 = delimToStr(delim, escape);
+	if (strlen(token)) {
+	  token = h_get(table, token);
+	  //	  printf("%s", token);
+	  write(decode, token, strlen(token));
+	}
+	if (strlen(token2)) {
+	  token2 = h_get(table, token2);
+	  //	  printf("%s", token2);
+	  write(decode, token2, strlen(token2));
+	}
+
+      }
+      write(decode, "\n", 1);
+      //      printf("\n");      
+      close(decode);      
     } else if (decompress) {
-		
+
     }
   }
   // Free all nodes

@@ -34,19 +34,20 @@ h_node * h_init() {
 
 //inserts string if doesn't exist, adds count if it does
 //returns pointer to hash table
-h_node * h_add(h_node * h_table, char * str, char * count) {
+h_node * h_add(h_node * h_table, char * str, char * count, int num) {
   float lf = LOAD_FACTOR;
   if ((float) h_items / (float) h_size >= lf) {
-    h_table = h_rehash(h_table);
+    h_table = h_rehash(h_table, num);
   }  
   int hash_code = h_func(str);
+
   int i = 0, index = hash_code % h_size;
   while (h_table[index].string != NULL && strcmp(h_table[index].string, str) != 0) { 
     index = (hash_code + i++) % h_size;
   }
   (h_table[index]).string = str; //should I instead malloc something new? or nah
   (h_table[index]).hashcode = hash_code;
-  if (!atoi(count)) {
+  if (!num) {
     (h_table[index]).freq = count;
   } else {
     sprintf((h_table[index]).freq, "%d", atoi((h_table[index]).freq) + atoi(count));
@@ -61,6 +62,7 @@ char * h_get(h_node * h_table, char * str) {
   while (h_table[index].string != NULL && strcmp(h_table[index].string, str) != 0) { 
     index = (hash_code + i++) % h_size;
   }
+  //  printf("H%s\n", h_table[index].freq);
   return (h_table[index]).freq;
 }
 
@@ -68,10 +70,10 @@ h_node * h_add_helper(h_node * h_table, char * str, int len, char * count) {
   char * string = malloc(len+1);
   memset(string, 0, len+1);
   memcpy(string, str, len);
-  return h_add(h_table, string, count);
+  return h_add(h_table, string, count, 1);
 }
 
-h_node * h_rehash(h_node * h_table) {
+h_node * h_rehash(h_node * h_table, int num) {
   h_size *= 2;
   h_items = 0;
   h_node * h_tmp = h_init();
@@ -83,7 +85,7 @@ h_node * h_rehash(h_node * h_table) {
   }
   for (i = 0; i < h_size/2; i++) {
     if ((h_table)[i].string != NULL) {
-      h_tmp = h_add(h_tmp, (h_table)[i].string, (h_table)[i].freq);
+      h_tmp = h_add(h_tmp, (h_table)[i].string, (h_table)[i].freq, num);
     }
   }
   free(h_table);

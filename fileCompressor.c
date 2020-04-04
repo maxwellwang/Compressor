@@ -197,6 +197,14 @@ void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, in
 	if (!aNode) {
 		return;
 	}
+	if (!(aNode->left) && !(aNode->right) && pathcodeLength == 0) {
+		// this is the only node
+		write(codebook, "0", 1);
+		write(codebook, "\t", 1);
+		write(codebook, aNode->token, aNode->tokenLength);
+		write(codebook, "\n", 1);
+		return;
+	}
 	// go left
 	*head = '0';
 	if (pathcodeLength + 1 > size) {
@@ -431,6 +439,11 @@ int main(int argc, char** argv) {
       }
       write(codebook, "\n", 1);
       char* pathcode = (char*)malloc(10);
+      if (!pathcode) {
+      	printf("Error: Malloc failed\n");
+      	exit(EXIT_FAILURE);
+      }
+      memset(pathcode, '\0', 10);
 	char* head = pathcode;
 	int size = 10;
 	int pathcodeLength = 0;

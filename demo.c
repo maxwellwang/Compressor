@@ -176,6 +176,10 @@ Node* extractNode(Heap* aHeap) {
 
 // Builds tree from 2 nodes
 Node* buildTree(Node* nodeA, Node* nodeB) {
+	if (!nodeB) {
+		// only one token in file, return it
+		return nodeA;
+	}
 	Node* temp = (Node*)malloc(sizeof(Node));
 	if (!temp) {
 		printf("Error: Malloc failed\n");

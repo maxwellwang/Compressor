@@ -10,7 +10,7 @@ extern int h_items;
 typedef struct htable_node {
   char * string;
   int hashcode;
-  int freq;
+  char * freq;
 } h_node;
 
 
@@ -21,9 +21,11 @@ h_node * h_init();
 
 h_node * h_rehash(h_node*);
 
-h_node * h_add_helper(h_node * h_table, char * str, int len, int count);
+char * h_get(h_node* h_table, char * str);
+
+h_node * h_add_helper(h_node * h_table, char * str, int len, char* count);
 //inserts string if doesn't exist, adds count if it does
 //returns pointer to hash table
-h_node * h_add(h_node*, char*, int);
+h_node * h_add(h_node*, char*, char*);
 
 #endif

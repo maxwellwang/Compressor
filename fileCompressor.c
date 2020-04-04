@@ -124,7 +124,7 @@ h_node * populateHashmap(char * filename, h_node* table, int escapeLength) {
     }
     if (readingWhitespace == !ISWHITESPACE(c)) { // change from whitespace to non-whitespace or vice versa
       // load current token into hashmap
-      table = h_add_helper(table, buffer, tokenLength, 1);
+      table = h_add_helper(table, buffer, tokenLength, "1");
       tokenLength = 0;
       head = buffer; // ready to read next token
     }
@@ -186,7 +186,7 @@ h_node * populateHashmap(char * filename, h_node* table, int escapeLength) {
     status = read(file, &c, 1);
   }
   // load in last token
-  table = h_add_helper(table, buffer, tokenLength, 1);
+  table = h_add_helper(table, buffer, tokenLength, "1");
   free(buffer);
   return table;
 }
@@ -441,7 +441,7 @@ int main(int argc, char** argv) {
 	if (table[i].string) {
 	  // create node and insert into heap
 	  //printf("[%s]\n", table[i].string);
-	  temp = makeTokenNode(table[i].string, strlen(table[i].string), table[i].freq);
+	  temp = makeTokenNode(table[i].string, strlen(table[i].string), atoi(table[i].freq));
 	  insertNode(aHeap, temp);
 	}
       }
@@ -483,8 +483,15 @@ int main(int argc, char** argv) {
 	if (!strlen(token)) {
 	  break;
 	}
-	printf("K:[%s] V:[%s]\n", token, token2);
-      }	
+	table = h_add(table, token, token2);
+	//	printf("K:[%s] V:[%s]\n", token, token2);
+      }
+      for (i = 0; i < h_size; i++) {
+	if (table[i].string) {
+	  // create node and insert into heap
+	  printf("[%s][%s]\n", table[i].string, table[i].freq);
+	}
+      }
       //printf("%s\n", file+2);
       
     } else if (decompress) {

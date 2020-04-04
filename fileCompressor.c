@@ -46,29 +46,17 @@ char * readFile(char * filename) {
   return huff_buffer;
 }
 
-// Reads file to populate hashmap w/ tokens and frequencies, also sets escapeLength
-h_node * populateHashmap(char * filename, h_node* table, int* escapeLength) {
-  int file = open(filename, O_RDONLY);
+// Sets escape length accordingly
+void checkFile(char* filename, int* escapeLength) {
+	  int file = open(filename, O_RDONLY);
   if (file == -1) {
     // Open failed -> error
     printf("Error: Expected to open %s file, failed to open\n", filename);
     exit(EXIT_FAILURE);
   }
-  
   char c = '?';
   char pastC = '?'; // need this to count consecutive escape chars
-  char* buffer = (char*)malloc(10);
-  if (!buffer) {
-    printf("Error: Malloc failed\n");
-    exit(EXIT_FAILURE);
-  }
-  memset(buffer, '\0', 10);
-  char* nextBuffer = NULL; // double the buffer if it isn't long enough
-  int tokenLength = 0;
-  int size = 10; // buffer size
-  char* head = buffer; // where to write next char
   int status = read(file, &c, 1);
-  int readingWhitespace = ISWHITESPACE(c); // read whitespace until non-whitespace, read non-whitespace until whitespace
   int consecEscapes = 1;
   int maxConsecEscapes = consecEscapes; // escape length (# of !s) must be greater than this to avoid confusion
   int foundEscapeChar = 0;
@@ -89,27 +77,6 @@ h_node * populateHashmap(char * filename, h_node* table, int* escapeLength) {
     	}
     	consecEscapes = 1;
     }
-    if (readingWhitespace == !ISWHITESPACE(c)) { // change from whitespace to non-whitespace or vice versa
-      // load current token into hashmap
-      table = h_add_helper(table, buffer, tokenLength, 1);
-      tokenLength = 0;
-      head = buffer; // ready to read next token
-    }
-    readingWhitespace = ISWHITESPACE(c);
-    // add char to buffer, resize if necessary
-    if (tokenLength + 1 > size) {
-      // reallocate memory
-      size *= 2;
-      nextBuffer = (char*)malloc(size);
-      memcpy(nextBuffer, buffer, size);
-      free(buffer);
-      buffer = nextBuffer;
-      nextBuffer = NULL;
-      head = buffer + tokenLength;
-    }
-    *head = c;
-    head++;
-    tokenLength++;
     pastC = c;
     status = read(file, &c, 1);
   }
@@ -122,6 +89,101 @@ h_node * populateHashmap(char * filename, h_node* table, int* escapeLength) {
   if (maxConsecEscapes + 1 > *escapeLength) {
   	// new escape length
   	*escapeLength = maxConsecEscapes + 1;
+  }
+  return;
+}
+
+// Reads file to populate hashmap w/ tokens and frequencies, also sets escapeLength
+h_node * populateHashmap(char * filename, h_node* table, int escapeLength) {
+  int file = open(filename, O_RDONLY);
+  if (file == -1) {
+    // Open failed -> error
+    printf("Error: Expected to open %s file, failed to open\n", filename);
+    exit(EXIT_FAILURE);
+  }
+  
+  char c = '?';
+  char* buffer = (char*)malloc(10);
+  if (!buffer) {
+    printf("Error: Malloc failed\n");
+    exit(EXIT_FAILURE);
+  }
+  memset(buffer, '\0', 10);
+  char* nextBuffer = NULL; // double the buffer if it isn't long enough
+  int tokenLength = 0;
+  int size = 10; // buffer size
+  char* head = buffer; // where to write next char
+  int status = read(file, &c, 1);
+  int j; // loop var to be used later
+  int readingWhitespace = ISWHITESPACE(c); // read whitespace until non-whitespace, read non-whitespace until whitespace
+  while (status) {
+    if (status == -1 && errno == EINTR) {
+      // interrupted, try again
+      status = read(file, &c, 1);
+      continue;
+    }
+    if (readingWhitespace == !ISWHITESPACE(c)) { // change from whitespace to non-whitespace or vice versa
+      // load current token into hashmap
+      table = h_add_helper(table, buffer, tokenLength, 1);
+      tokenLength = 0;
+      head = buffer; // ready to read next token
+    }
+    readingWhitespace = ISWHITESPACE(c);
+    // add char to buffer, resize if necessary
+    if (tokenLength + 1 > size) {
+      // reallocate memory
+      size *= 2;
+      nextBuffer = (char*)malloc(size);
+      memcpy(nextBuffer, buffer, size / 2);
+      free(buffer);
+      buffer = nextBuffer;
+      nextBuffer = NULL;
+      head = buffer + tokenLength;
+    }
+    if (ISWHITESPACE(c) && c != ' ') {
+    	// escape sequence then the letter
+    	if (tokenLength + escapeLength + 1 > size) {
+  	      // reallocate memory
+   		   size += (escapeLength + 1);
+   		   nextBuffer = (char*)malloc(size);
+   		   memcpy(nextBuffer, buffer, size - escapeLength - 1);
+   		   free(buffer);
+   		   buffer = nextBuffer;
+   		   nextBuffer = NULL;
+	   	   head = buffer + tokenLength;
+   		 }
+   		for (j = 0; j < escapeLength; j++) {
+   			*head = '!';
+   			head++;
+   			tokenLength++;
+   		}
+   		switch(c) {
+   			case '\n':
+   				*head = 'n';
+   				break;
+   			case '\t':
+   				*head = 't';
+   				break;
+   			case '\v':
+   				*head = 'v';
+   				break;
+   			case '\f':
+   				*head = 'f';
+   				break;
+   			case '\r':
+   				*head = 'r';
+   				break;
+   			default:
+   				break;
+   		}
+   		head++;
+   		tokenLength++;
+    } else {
+    	*head = c;
+    	head++;
+    	tokenLength++;
+    }
+    status = read(file, &c, 1);
   }
   // load in last token
   table = h_add_helper(table, buffer, tokenLength, 1);
@@ -349,7 +411,8 @@ int main(int argc, char** argv) {
   } else {
     // Execute command on file (possibly using codebook)
     if (buildCodebook) {
-		table = populateHashmap(filename, table, &escapeLength);
+    	checkFile(filename, &escapeLength);
+		table = populateHashmap(filename, table, escapeLength);
       	Node* temp;
       int i;
       	for (i = 0; i < h_size; i++) {

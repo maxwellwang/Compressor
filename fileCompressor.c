@@ -93,20 +93,6 @@ void checkFile(char* filename, int* escapeLength) {
   return;
 }
 
-// For whitespace, load each whitespace char once
-h_node* loadEachChar(char* buffer, int tokenLength, h_node* table, int escapeLength) {
-	int i;
-	for (i = 0; i < tokenLength; i++) {
-		if (buffer[i] == ' ') {
-			table = h_add_helper(table, buffer + i, 1, "1");
-		} else {
-			table = h_add_helper(table, buffer + i, escapeLength + 1, "1");
-			i += escapeLength;
-		}
-	}
-	return table;
-}
-
 // Reads file to populate hashmap w/ tokens and frequencies, also sets escapeLength
 h_node * populateHashmap(char * filename, h_node* table, int escapeLength) {
   int file = open(filename, O_RDONLY);
@@ -138,13 +124,9 @@ h_node * populateHashmap(char * filename, h_node* table, int escapeLength) {
     }
     if (readingWhitespace == !ISWHITESPACE(c)) { // change from whitespace to non-whitespace or vice versa
       // load current token into hashmap
-      if (readingWhitespace) {
-      	table = loadEachChar(buffer, tokenLength, table, escapeLength);
-      } else {
-      	table = h_add_helper(table, buffer, tokenLength, "1");
-      }
+      table = h_add_helper(table, buffer, tokenLength, "1");
       tokenLength = 0;
-      head = buffer;
+      head = buffer; // ready to read next token
     }
     readingWhitespace = ISWHITESPACE(c);
     // add char to buffer, resize if necessary
@@ -540,12 +522,8 @@ int main(int argc, char** argv) {
       int pathcodeLength = 0;
       recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, size, pathcodeLength);
     } else if (compress) {
-<<<<<<< Updated upstream
-      char * file = readFile("HuffmanCodebook");
-=======
       char * file = readFile(codebookname);
       int i = 0;
->>>>>>> Stashed changes
       char * token = "lol";
       char * token2;
       char * escape;

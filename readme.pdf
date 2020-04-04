@@ -1,4 +1,33 @@
-- “readme.pdf” that describes the design and implementation of your fileCompressor
-- include an analysis of the time and space usage and complexity of your program. You do not
-need to analyze every size function, but you should analyze the overall program's time and
-space used as a function of the size of the input.
+# File Compressor
+
+File Compressor is a program for losslessly compressing/decompressing text files.
+
+## Description
+
+File Compressor is a program that is capable of losslessly compressing text files into binary .hcz files and then decompressing those
+back to the original text file without any differences. It does this using 3 different flags, -b for build codebook for text file
+using Huffman coding, -c for compress text file into .hcz file using codebook, and -d for decompress .hcz file into text file using
+codebook. Building a codebook uses a hashmap to measure token frequencies, and then a min heap to build a Huffman tree that contains
+binary codes for each token. Additionally, these commands can be applied recursively to a directory by appending the -R flag: then the
+command is applied to every text file found in the directory as well as the text files within directories found in the directory. Note
+that recursively building a codebook produces one codebook that includes the tokens for all the text files and text files in
+directories within the directory.
+
+## Usage
+
+```bash
+./fileCompressor <flag(s)> <path or file> |codebook|
+./fileCompressor -b someFile
+./fileCompressor -c someFile someCodebook
+./fileCompressor -d someFile.hcz someCodebook
+./fileCompressor -R -b someDirectory
+./fileCompressor -R -c someDirectory someCodebook
+./fileCompressor -R -d someDirectory someCodebook
+```
+
+## Complexity
+
+Let n be the number of tokens found. Let m be the number of unique tokens. We will analyze the time and space complexities for each
+of the 3 basic commands.
+
+

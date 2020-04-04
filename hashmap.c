@@ -63,7 +63,7 @@ char * h_get(h_node * h_table, char * str) {
     index = (hash_code + i++) % h_size;
   }
   //  printf("H%s\n", h_table[index].freq);
-  return (h_table[index]).freq;
+  return (h_table[index].string == NULL) ? 0 : (h_table[index]).freq;
 }
 
 h_node * h_add_helper(h_node * h_table, char * str, int len, char * count) {

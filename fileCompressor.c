@@ -278,6 +278,22 @@ void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, in
   return;
 }
 
+char strToDelim(char * str, char * escape) {
+  switch(str[strlen(escape)]) {
+  case 'n':
+    return '\n';
+  case 't':
+    return '\t';
+  case 'v':
+    return '\v';
+  case 'f':
+    return '\f';
+  case 'r':
+    return '\r';
+  }
+  return 0;
+}
+
 char * delimToStr(char delim, char * escape) {
   char * str;
   if (delim == '\n' || delim == '\t' || delim == '\v' || delim == '\r' || delim == '\f') {
@@ -285,23 +301,23 @@ char * delimToStr(char delim, char * escape) {
     str = malloc(len + 2);
     memcpy(str, escape, len);
     switch (delim) {
-      case '\n':
-	delim = 'n';
-	break;
-      case '\t':
-	delim = 't';
-	break;
-      case '\v':
-	delim = 'v';
-	break;
-      case '\f':
-	delim = 'f';
-	break;
-      case '\r':
-	delim = 'r';
-	break;
-      default:
-	break;
+    case '\n':
+      delim = 'n';
+      break;
+    case '\t':
+      delim = 't';
+      break;
+    case '\v':
+      delim = 'v';
+      break;
+    case '\f':
+      delim = 'f';
+      break;
+    case '\r':
+      delim = 'r';
+      break;
+    default:
+      break;
 
     }
     str[len] = delim;
@@ -526,6 +542,9 @@ int main(int argc, char** argv) {
       char * token2;
       char * escape;
       int len = 0;
+      int encode;
+      char * filenameC = malloc(strlen(filename) + 1 + 4);
+      
       
       escape = nextToken(file + len, 0);
       //    printf("Escape char: %s\n", escape);
@@ -539,25 +558,15 @@ int main(int argc, char** argv) {
 	  break;
 	}
 	table = h_add(table, token2, token, 0);
-	//	printf("K:[%s] V:[%s]\n", token, token2);
       }
-//      for (i = 0; i < h_size; i++) {
-//	if (table[i].string) {
-//	  // create node and insert into heap
-//	  printf("[%s][%s][%s]\n", table[i].string, table[i].freq, h_get(table, table[i].string));
-//	}
-//      }
       file = readFile(filename);
       delim = '0';
       len = 0;
 
-      int decode;
-      char * filenameC = malloc(strlen(filename) + 1 + 4);
-      
       memcpy(filenameC, filename, strlen(filename));
       memcpy(filenameC+strlen(filename), ".hcz", 4);
       filenameC[strlen(filename)+4] = 0;
-      decode = open(filenameC, O_RDWR | O_CREAT, 00600);
+      encode = open(filenameC, O_RDWR | O_CREAT, 00600);
       
       while (delim) {
 	token = nextToken(file + len, 1);
@@ -565,22 +574,73 @@ int main(int argc, char** argv) {
 	token2 = delimToStr(delim, escape);
 	if (strlen(token)) {
 	  token = h_get(table, token);
-	  //	  printf("%s", token);
-	  write(decode, token, strlen(token));
+	  write(encode, token, strlen(token));
 	}
 	if (strlen(token2)) {
 	  token2 = h_get(table, token2);
-	  //	  printf("%s", token2);
-	  write(decode, token2, strlen(token2));
+	  write(encode, token2, strlen(token2));
 	}
 
       }
-      write(decode, "\n", 1);
-      //      printf("\n");      
-      close(decode);      
+      write(encode, "\n", 1);
+      close(encode);      
     } else if (decompress) {
-
+      char * file = readFile("HuffmanCodebook");
+      int i, j;
+      char * token = "lol";
+      char * token2;
+      char * escape;
+      int len = 0;
+      int maxlen = 0;
+      int decode;
+      char * filenameC = malloc(strlen(filename) + 1 - 4);
+            
+      escape = nextToken(file + len, 0);
+      len += strlen(escape) + 1;
+      while (strlen(token)) {
+	token = nextToken(file + len, 0);
+	maxlen = strlen(token) > maxlen ? strlen(token) : maxlen;
+	len += strlen(token) + 1;
+	token2 = nextToken(file + len, 0);
+	len += strlen(token2) + 1;
+	if (!strlen(token)) {
+	  break;
+	}
+	table = h_add(table, token, token2, 0);
+      }
+      //or (i = 0; i < h_size; i++) {
+      //	if (table[i].string != NULL) {
+      //	  printf("H[%s|%s]\n", table[i].string, table[i].freq);
+      //	}
+      //
+      file = readFile(filename);
+      len = (strlen(file));
+      memcpy(filenameC, filename, strlen(filename)-4);
+      filenameC[strlen(filename)-4] = 0;
+      decode = open(filenameC, O_RDWR | O_CREAT, 00600);
+      char * code = malloc(maxlen+1);
+      char * word;
+      char * ws = malloc(2);
+      ws[1] = 0;
+      for (i = 0; i < len; i++) {
+	for (j = 0; j < maxlen+1; j++) {
+	  memset(code, 0, maxlen+1);
+	  memcpy(code, file+i, j);
+	  word = h_get(table, code);
+	  if (word) {
+	    if (strncmp(word, escape, strlen(escape)) == 0) {
+	      ws[0] = strToDelim(word, escape);
+	      write(decode, ws, 1);
+	    } else {
+	      write(decode, word, strlen(word));
+	    }
+	    i += j-1;
+	    break;
+	  }
+	}
+      }
     }
+      
   }
   // Free all nodes
   if (aHeap) {

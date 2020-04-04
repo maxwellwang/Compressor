@@ -93,6 +93,20 @@ void checkFile(char* filename, int* escapeLength) {
   return;
 }
 
+// For whitespace, load each whitespace char once
+h_node* loadEachChar(char* buffer, int tokenLength, h_node* table, int escapeLength) {
+	int i;
+	for (i = 0; i < tokenLength; i++) {
+		if (buffer[i] == ' ') {
+			table = h_add_helper(table, buffer + i, 1, "1");
+		} else {
+			table = h_add_helper(table, buffer + i, escapeLength + 1, "1");
+			i += escapeLength;
+		}
+	}
+	return table;
+}
+
 // Reads file to populate hashmap w/ tokens and frequencies, also sets escapeLength
 h_node * populateHashmap(char * filename, h_node* table, int escapeLength) {
   int file = open(filename, O_RDONLY);
@@ -124,9 +138,13 @@ h_node * populateHashmap(char * filename, h_node* table, int escapeLength) {
     }
     if (readingWhitespace == !ISWHITESPACE(c)) { // change from whitespace to non-whitespace or vice versa
       // load current token into hashmap
-      table = h_add_helper(table, buffer, tokenLength, "1");
+      if (readingWhitespace) {
+      	table = loadEachChar(buffer, tokenLength, table, escapeLength);
+      } else {
+      	table = h_add_helper(table, buffer, tokenLength, "1");
+      }
       tokenLength = 0;
-      head = buffer; // ready to read next token
+      head = buffer;
     }
     readingWhitespace = ISWHITESPACE(c);
     // add char to buffer, resize if necessary
@@ -340,7 +358,6 @@ int main(int argc, char** argv) {
   DIR* dir = NULL;
   char * dirname;
   char * filename;
-  char * codebookname;
   int argCounter = 1;
   // Loop through arguments to determine course of action
   for (argCounter = 1; argCounter < argc; argCounter++) {
@@ -409,7 +426,6 @@ int main(int argc, char** argv) {
 	  // Expecting file/directory to compress/decompress
 	  if (recursive) {
 	    // Expecting directory
-	    //TODO
 	    dir = opendir(argv[argCounter]);
 	    if (!dir) {
 	      // Open failed -> error
@@ -428,13 +444,12 @@ int main(int argc, char** argv) {
 	  }
 	} else {
 	  // Expecting codebook file
-	  codebookname = argv[argCounter];
-//odebook = open(argv[argCounter], O_RDONLY);
-//f (codebook == -1) {
-// // Open failed -> error
-// printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
-// exit(EXIT_FAILURE);
-//
+	  codebook = open(argv[argCounter], O_RDONLY);
+	  if (codebook == -1) {
+	    // Open failed -> error
+	    printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
+	    exit(EXIT_FAILURE);
+	  }
 	}
       } else {
 	// Expecting one file/directory
@@ -522,8 +537,7 @@ int main(int argc, char** argv) {
       int pathcodeLength = 0;
       recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, size, pathcodeLength);
     } else if (compress) {
-      char * file = readFile(codebookname);
-      int i = 0;
+      char * file = readFile("HuffmanCodebook");
       char * token = "lol";
       char * token2;
       char * escape;
@@ -571,7 +585,7 @@ int main(int argc, char** argv) {
       write(encode, "\n", 1);
       close(encode);      
     } else if (decompress) {
-      char * file = readFile(codebookname);
+      char * file = readFile("HuffmanCodebook");
       int i, j;
       char * token = "lol";
       char * token2;
@@ -594,7 +608,11 @@ int main(int argc, char** argv) {
 	}
 	table = h_add(table, token, token2, 0);
       }
-
+      //or (i = 0; i < h_size; i++) {
+      //	if (table[i].string != NULL) {
+      //	  printf("H[%s|%s]\n", table[i].string, table[i].freq);
+      //	}
+      //
       file = readFile(filename);
       len = (strlen(file));
       memcpy(filenameC, filename, strlen(filename)-4);

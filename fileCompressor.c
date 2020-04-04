@@ -449,6 +449,51 @@ void compressFile(char * filename, char * codebookname, h_node * table) {
   close(encode);
 }
 
+void buildCodebookFunc(char * filename, h_node * table) {
+  int codebook = 0;
+  Heap* aHeap = (Heap*)malloc(sizeof(aHeap));
+  aHeap->finalIndex = -1; // it increments when insertNode is called
+  aHeap->size = 100;
+  aHeap->heap = (Node**)malloc(sizeof(Node*) * aHeap->size);
+  int escapeLength = 1;	
+  checkFile(filename, &escapeLength);
+  table = populateHashmap(filename, table, escapeLength);
+  Node* temp;
+  int i;
+  for (i = 0; i < h_size; i++) {
+    if (table[i].string) {
+      // create node and insert into heap
+      temp = makeTokenNode(table[i].string, strlen(table[i].string), atoi(table[i].freq));
+      insertNode(aHeap, temp);
+    }
+  }
+  codebook = open("./HuffmanCodebook", O_RDWR | O_CREAT, 00600);
+  // escape sequence
+  int ind;
+  for (ind = 0; ind < escapeLength; ind++) {
+    write(codebook, "!", 1);
+  }
+  write(codebook, "\n", 1);
+  char* pathcode = (char*)malloc(10);
+  if (!pathcode) {
+    printf("Error: Malloc failed\n");
+    exit(EXIT_FAILURE);
+  }
+  memset(pathcode, '\0', 10);
+  char* head = pathcode;
+  int size = 10;
+  int pathcodeLength = 0;
+  recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, size, pathcodeLength);
+  // Free all nodes
+      
+  if (aHeap) {
+    freeHeap(aHeap);
+  }
+  if (codebook) {
+    close(codebook);
+  }
+}
+
 int main(int argc, char** argv) {
   if (argc < 3) {
     // Less than 3 arguments -> error
@@ -456,7 +501,7 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
   int buildCodebook = 0, compress = 0, decompress = 0, recursive = 0, flagSection = 1, numFlags = 0;
-  int file = 0, codebook = 0;
+  int file = 0;
   DIR* dir = NULL;
   char * dirname;
   char * filename;
@@ -591,12 +636,7 @@ int main(int argc, char** argv) {
   }
 	
   // Execute desired command
-  Heap* aHeap = (Heap*)malloc(sizeof(aHeap));
-  aHeap->finalIndex = -1; // it increments when insertNode is called
-  aHeap->size = 100;
-  aHeap->heap = (Node**)malloc(sizeof(Node*) * aHeap->size);
   h_node* table = h_init();
-  int escapeLength = 1;
   if (recursive) {
     // Descend through directory and recursively execute command
     if (buildCodebook) {
@@ -611,35 +651,7 @@ int main(int argc, char** argv) {
   } else {
     // Execute command on file (possibly using codebook)
     if (buildCodebook) {
-      checkFile(filename, &escapeLength);
-      table = populateHashmap(filename, table, escapeLength);
-      Node* temp;
-      int i;
-      for (i = 0; i < h_size; i++) {
-	if (table[i].string) {
-	  // create node and insert into heap
-	  //printf("[%s]\n", table[i].string);
-	  temp = makeTokenNode(table[i].string, strlen(table[i].string), atoi(table[i].freq));
-	  insertNode(aHeap, temp);
-	}
-      }
-      codebook = open("./HuffmanCodebook", O_RDWR | O_CREAT, 00600);
-      // escape sequence
-      int ind;
-      for (ind = 0; ind < escapeLength; ind++) {
-      	write(codebook, "!", 1);
-      }
-      write(codebook, "\n", 1);
-      char* pathcode = (char*)malloc(10);
-      if (!pathcode) {
-      	printf("Error: Malloc failed\n");
-      	exit(EXIT_FAILURE);
-      }
-      memset(pathcode, '\0', 10);
-      char* head = pathcode;
-      int size = 10;
-      int pathcodeLength = 0;
-      recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, size, pathcodeLength);
+      buildCodebookFunc(filename, table);
     } else if (compress) {
       compressFile(filename, codebookname, table);
     } else if (decompress) {
@@ -647,16 +659,10 @@ int main(int argc, char** argv) {
     }
       
   }
-  // Free all nodes
-  if (aHeap) {
-    freeHeap(aHeap);
-  }
+
   // Close all opened files/directories
   if (file) {
     close(file);
-  }
-  if (codebook) {
-    close(codebook);
   }
   if (dir) {
     closedir(dir);

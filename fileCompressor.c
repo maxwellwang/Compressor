@@ -15,8 +15,8 @@ char * readFile(char * filename) {
   int buff_size = 4096;
   char * huff_buffer = (char*)malloc(buff_size);
   if (!huff_buffer) {
-  	printf("Error: Malloc failed\n");
-  	exit(EXIT_FAILURE);
+    printf("Error: Malloc failed\n");
+    exit(EXIT_FAILURE);
   }
   memset(huff_buffer, 0, 4096);
      
@@ -32,8 +32,8 @@ char * readFile(char * filename) {
     }
     char * huff_tmp = (char*)malloc(buff_size*2);
     if (!huff_tmp) {
-    	printf("Error: Malloc failed\n");
-    	exit(EXIT_FAILURE);
+      printf("Error: Malloc failed\n");
+      exit(EXIT_FAILURE);
     }
     memset(huff_tmp, 0, buff_size*2);
     memcpy(huff_tmp, huff_buffer, huff_read);
@@ -48,7 +48,7 @@ char * readFile(char * filename) {
 
 // Sets escape length accordingly
 void checkFile(char* filename, int* escapeLength) {
-	  int file = open(filename, O_RDONLY);
+  int file = open(filename, O_RDONLY);
   if (file == -1) {
     // Open failed -> error
     printf("Error: Expected to open %s file, failed to open\n", filename);
@@ -67,28 +67,28 @@ void checkFile(char* filename, int* escapeLength) {
       continue;
     }
     if (c == '!') {
-    	foundEscapeChar = 1;
+      foundEscapeChar = 1;
     }
     if (c == '!' && pastC == '!') {
-    	consecEscapes++;
+      consecEscapes++;
     } else if (c != '!' && pastC == '!') {
-    	if (consecEscapes > maxConsecEscapes) {
-    		maxConsecEscapes = consecEscapes;
-    	}
-    	consecEscapes = 1;
+      if (consecEscapes > maxConsecEscapes) {
+	maxConsecEscapes = consecEscapes;
+      }
+      consecEscapes = 1;
     }
     pastC = c;
     status = read(file, &c, 1);
   }
   if (consecEscapes > maxConsecEscapes) {
-  	maxConsecEscapes = consecEscapes;
+    maxConsecEscapes = consecEscapes;
   }
   if (!foundEscapeChar) {
-  	maxConsecEscapes = 0;
+    maxConsecEscapes = 0;
   }
   if (maxConsecEscapes + 1 > *escapeLength) {
-  	// new escape length
-  	*escapeLength = maxConsecEscapes + 1;
+    // new escape length
+    *escapeLength = maxConsecEscapes + 1;
   }
   return;
 }
@@ -141,47 +141,47 @@ h_node * populateHashmap(char * filename, h_node* table, int escapeLength) {
       head = buffer + tokenLength;
     }
     if (ISWHITESPACE(c) && c != ' ') {
-    	// escape sequence then the letter
-    	if (tokenLength + escapeLength + 1 > size) {
-  	      // reallocate memory
-   		   size += (escapeLength + 1);
-   		   nextBuffer = (char*)malloc(size);
-   		   memcpy(nextBuffer, buffer, size - escapeLength - 1);
-   		   free(buffer);
-   		   buffer = nextBuffer;
-   		   nextBuffer = NULL;
-	   	   head = buffer + tokenLength;
-   		 }
-   		for (j = 0; j < escapeLength; j++) {
-   			*head = '!';
-   			head++;
-   			tokenLength++;
-   		}
-   		switch(c) {
-   			case '\n':
-   				*head = 'n';
-   				break;
-   			case '\t':
-   				*head = 't';
-   				break;
-   			case '\v':
-   				*head = 'v';
-   				break;
-   			case '\f':
-   				*head = 'f';
-   				break;
-   			case '\r':
-   				*head = 'r';
-   				break;
-   			default:
-   				break;
-   		}
-   		head++;
-   		tokenLength++;
+      // escape sequence then the letter
+      if (tokenLength + escapeLength + 1 > size) {
+	// reallocate memory
+	size += (escapeLength + 1);
+	nextBuffer = (char*)malloc(size);
+	memcpy(nextBuffer, buffer, size - escapeLength - 1);
+	free(buffer);
+	buffer = nextBuffer;
+	nextBuffer = NULL;
+	head = buffer + tokenLength;
+      }
+      for (j = 0; j < escapeLength; j++) {
+	*head = '!';
+	head++;
+	tokenLength++;
+      }
+      switch(c) {
+      case '\n':
+	*head = 'n';
+	break;
+      case '\t':
+	*head = 't';
+	break;
+      case '\v':
+	*head = 'v';
+	break;
+      case '\f':
+	*head = 'f';
+	break;
+      case '\r':
+	*head = 'r';
+	break;
+      default:
+	break;
+      }
+      head++;
+      tokenLength++;
     } else {
-    	*head = c;
-    	head++;
-    	tokenLength++;
+      *head = c;
+      head++;
+      tokenLength++;
     }
     status = read(file, &c, 1);
   }
@@ -193,71 +193,85 @@ h_node * populateHashmap(char * filename, h_node* table, int escapeLength) {
 
 // Recursively navigates Huffman tree to populate codebook
 void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, int size, int pathcodeLength) {
-	char* temp;
-	if (!aNode) {
-		return;
-	}
-	if (!(aNode->left) && !(aNode->right) && pathcodeLength == 0) {
-		// this is the only node
-		write(codebook, "0", 1);
-		write(codebook, "\t", 1);
-		write(codebook, aNode->token, aNode->tokenLength);
-		write(codebook, "\n", 1);
-		return;
-	}
-	// go left
-	*head = '0';
-	if (pathcodeLength + 1 > size) {
-		// double pathcode length
-		temp = (char*)malloc(size * 2);
-		if (!temp) {
-			printf("Error: Malloc failed\n");
-			exit(EXIT_SUCCESS);
-		}
-		memcpy(temp, pathcode, size);
-		size *= 2;
-		free(pathcode);
-		pathcode = temp;
-		head = pathcode + pathcodeLength;
-		temp = NULL;
-	}
-	pathcodeLength++;
-	head++;
-	recursivePopulate(codebook, aNode->left, pathcode, head, size, pathcodeLength);
-	// back up
-	pathcodeLength--;
-	head--;
-	// Use token and pathcode, the actually important part
-	if (aNode->token) {
-		// has a token, add to codebook
-		write(codebook, pathcode, pathcodeLength);
-		write(codebook, "\t", 1);
-		write(codebook, aNode->token, aNode->tokenLength);
-		write(codebook, "\n", 1);
-	}
-	// go right
-	*head = '1';
-	if (pathcodeLength + 1 > size) {
-		// double pathcode length
-		temp = (char*)malloc(size * 2);
-		if (!temp) {
-			printf("Error: Malloc failed\n");
-			exit(EXIT_SUCCESS);
-		}
-		memcpy(temp, pathcode, size);
-		size *= 2;
-		free(pathcode);
-		pathcode = temp;
-		head = pathcode + pathcodeLength;
-		temp = NULL;
-	}
-	pathcodeLength++;
-	head++;
-	recursivePopulate(codebook, aNode->right, pathcode, head, size, pathcodeLength);
-	// back up
-	pathcodeLength--;
-	head--;
-	return;
+  char* temp;
+  if (!aNode) {
+    return;
+  }
+  if (!(aNode->left) && !(aNode->right) && pathcodeLength == 0) {
+    // this is the only node
+    write(codebook, "0", 1);
+    write(codebook, "\t", 1);
+    write(codebook, aNode->token, aNode->tokenLength);
+    write(codebook, "\n", 1);
+    return;
+  }
+  // go left
+  *head = '0';
+  if (pathcodeLength + 1 > size) {
+    // double pathcode length
+    temp = (char*)malloc(size * 2);
+    if (!temp) {
+      printf("Error: Malloc failed\n");
+      exit(EXIT_SUCCESS);
+    }
+    memcpy(temp, pathcode, size);
+    size *= 2;
+    free(pathcode);
+    pathcode = temp;
+    head = pathcode + pathcodeLength;
+    temp = NULL;
+  }
+  pathcodeLength++;
+  head++;
+  recursivePopulate(codebook, aNode->left, pathcode, head, size, pathcodeLength);
+  // back up
+  pathcodeLength--;
+  head--;
+  // Use token and pathcode, the actually important part
+  if (aNode->token) {
+    // has a token, add to codebook
+    write(codebook, pathcode, pathcodeLength);
+    write(codebook, "\t", 1);
+    write(codebook, aNode->token, aNode->tokenLength);
+    write(codebook, "\n", 1);
+  }
+  // go right
+  *head = '1';
+  if (pathcodeLength + 1 > size) {
+    // double pathcode length
+    temp = (char*)malloc(size * 2);
+    if (!temp) {
+      printf("Error: Malloc failed\n");
+      exit(EXIT_SUCCESS);
+    }
+    memcpy(temp, pathcode, size);
+    size *= 2;
+    free(pathcode);
+    pathcode = temp;
+    head = pathcode + pathcodeLength;
+    temp = NULL;
+  }
+  pathcodeLength++;
+  head++;
+  recursivePopulate(codebook, aNode->right, pathcode, head, size, pathcodeLength);
+  // back up
+  pathcodeLength--;
+  head--;
+  return;
+}
+
+char * nextToken(char * string) {
+  int i = 0;
+  for (; i < strlen(string); i++) {
+    if (string[i] == '\n' || string[i] == '\t' || string[i] == 0) {
+      break;
+    }
+  }
+  char * token = malloc(i+1);
+  memset(token, 0, i+1);
+  memcpy(token, string, i);
+  //  printf("DEBUG: %s %i\n", token, i);
+  return token;
 }
 
 int main(int argc, char** argv) {
@@ -382,12 +396,12 @@ int main(int argc, char** argv) {
 	} else {
 	  // Expecting file
 	  filename = argv[argCounter];
-//	  file = open(argv[argCounter], O_RDONLY);
-//	  if (file == -1) {
-//	    // Open failed -> error
-//	    printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
-//	    exit(EXIT_FAILURE);
-//	  }
+	  //	  file = open(argv[argCounter], O_RDONLY);
+	  //	  if (file == -1) {
+	  //	    // Open failed -> error
+	  //	    printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
+	  //	    exit(EXIT_FAILURE);
+	  //	  }
 	}
       }
     }
@@ -419,18 +433,18 @@ int main(int argc, char** argv) {
   } else {
     // Execute command on file (possibly using codebook)
     if (buildCodebook) {
-    	checkFile(filename, &escapeLength);
-		table = populateHashmap(filename, table, escapeLength);
-      	Node* temp;
+      checkFile(filename, &escapeLength);
+      table = populateHashmap(filename, table, escapeLength);
+      Node* temp;
       int i;
-      	for (i = 0; i < h_size; i++) {
-			if (table[i].string) {
-			  // create node and insert into heap
-			  //printf("[%s]\n", table[i].string);
-			  temp = makeTokenNode(table[i].string, strlen(table[i].string), table[i].freq);
-			  insertNode(aHeap, temp);
-			}
-   	   }
+      for (i = 0; i < h_size; i++) {
+	if (table[i].string) {
+	  // create node and insert into heap
+	  //printf("[%s]\n", table[i].string);
+	  temp = makeTokenNode(table[i].string, strlen(table[i].string), table[i].freq);
+	  insertNode(aHeap, temp);
+	}
+      }
       codebook = open("./HuffmanCodebook", O_RDWR | O_CREAT, 00600);
       // escape sequence
       int ind;
@@ -444,17 +458,35 @@ int main(int argc, char** argv) {
       	exit(EXIT_FAILURE);
       }
       memset(pathcode, '\0', 10);
-	char* head = pathcode;
-	int size = 10;
-	int pathcodeLength = 0;
+      char* head = pathcode;
+      int size = 10;
+      int pathcodeLength = 0;
       recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, size, pathcodeLength);
     } else if (compress) {
       //make it work for any filename
       char * file = readFile("HuffmanCodebook");
       int i = 0;
-      for (; i < strlen(file); i++) {
-	printf("[%d]", file[i]);
-      }
+      //read in escape char
+      char * token = "lol";
+      char * token2;
+      char * escape;
+      int len = 0;
+      
+      escape = nextToken(file + len);
+      printf("Escape char: %s\n", escape);
+      len += strlen(escape) + 1;
+      while (strlen(token)) {
+	token = nextToken(file + len);
+	len += strlen(token) + 1;
+	token2 = nextToken(file + len);
+	len += strlen(token2) + 1;
+	if (!strlen(token)) {
+	  break;
+	}
+	printf("K:[%s] V:[%s]\n", token, token2);
+      }	
+      //printf("%s\n", file+2);
+      
     } else if (decompress) {
 		
     }

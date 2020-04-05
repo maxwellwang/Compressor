@@ -1,1 +1,272 @@
-- "testplan.txt" that details the testing you ran your program through
+# File Compressor Test Plan
+File Compressor Test Plan details the test cases that we ran to check the functionality of our program.
+## Build codebook
+**Test 1**  
+inputtest.txt:
+```
+a
+a
+
+```
+Command:
+```
+./fileCompressor -b inputtest.txt
+```
+HuffmanCodebook:
+```
+!
+0	a
+1	!n
+
+```
+Success: Only 2 unique tokens, so 0 for one and 1 for the other.  
+**Test 2**  
+inputtest.txt:
+```
+!
+!
+
+```
+Command:
+```
+./fileCompressor -b inputtest.txt
+```
+HuffmanCodebook:
+```
+!!
+0	!!n
+1	!
+
+```
+Success: Correctly detected "!", our starting escape sequence, and changed escape sequence to "!!" so newline becomes !!n.  
+**Test 3**  
+inputtest.txt:
+```
+a	q w 	d s 	a sd 	f d s	 s w	 f
+a q w 		d	s 	sd w
+	!!!	!!!	w f
+
+```
+Command:
+```
+./fileCompressor -b inputtest.txt
+```
+HuffmanCodebook:
+```
+!!!!
+000	w
+0010	f
+0011	a
+01000	!!!!n
+01001	sd
+0101	d
+0110	s
+01110	q
+01111	!!!
+1	 
+
+```
+Success: Changed escape sequence to "!!!!" and correctly assigned shortest codes to most frequenct tokens ' ' and 'w'.
+## Compress
+**Test 1**  
+inputtest.txt:
+```
+a
+a
+
+```
+HuffmanCodebook:
+```
+!
+0	a
+1	!n
+
+```
+Command:
+```
+./fileCompressor -c inputtest.txt HuffmanCodebook
+```
+inputtest.txt.hcz:
+```
+0101
+
+```
+Success: Binary code is a correct translation of original file using codebook.  
+**Test 2**  
+inputtest.txt:
+```
+!
+!
+
+```
+HuffmanCodebook:
+```
+!!
+0	!!n
+1	!
+
+```
+Command:
+```
+./fileCompressor -c inputtest.txt HuffmanCodebook
+```
+inputtest.txt.hcz:
+```
+1010
+
+```
+Success: Binary code is a correct translation of original file using codebook.  
+**Test 3**  
+inputtest.txt:
+```
+a	q w 	d s 	a sd 	f d s	 s w	 f
+a q w 		d	s 	sd w
+	!!!	!!!	w f
+
+```
+HuffmanCodebook:
+```
+!!!!
+000	w
+0010	f
+0011	a
+01000	!!!!n
+01001	sd
+0101	d
+0110	s
+01110	q
+01111	!!!
+1	 
+
+```
+Command:
+```
+./fileCompressor -c inputtest.txt HuffmanCodebook
+```
+inputtest.txt.hcz:
+```
+00111111111011101000111110101101101111100111010011111001010101101101111011010001111100101111111111111111111111111111111111111111111111
+11111111111111111111111111111111111111100111011101000111111111110101111111101101111111010011000111111111111111111111111111111111111111
+11111111111111111111111111111111111111111111111111111111111111111111011111111101111111110001001001000
+
+```
+Success: Binary code is a correct translation of original file using codebook.
+## Decompress
+**Test 1**
+inputtest.txt.hcz:
+```
+0101
+
+```
+HuffmanCodebook:
+```
+!
+0	a
+1	!n
+
+```
+Command:
+```
+./fileCompressor -d inputtest.txt.hcz HuffmanCodebook
+```
+inputtest.txt:
+```
+a
+a
+
+```
+Success: Decompressed file matches original file.  
+**Test 2**  
+inputtest.txt.hcz:
+```
+1010
+
+```
+HuffmanCodebook:
+```
+!!
+0	!!n
+1	!
+
+```
+Command:
+```
+./fileCompressor -d inputtest.txt.hcz HuffmanCodebook
+```
+inputtest.txt:
+```
+!
+!
+
+```
+Success: Decompressed file matches original file.  
+**Test 3**  
+inputtest.txt.hcz:
+```
+00111111111011101000111110101101101111100111010011111001010101101101111011010001111100101111111111111111111111111111111111111111111111
+11111111111111111111111111111111111111100111011101000111111111110101111111101101111111010011000111111111111111111111111111111111111111
+11111111111111111111111111111111111111111111111111111111111111111111011111111101111111110001001001000
+
+```
+HuffmanCodebook:
+```
+!!!!
+000	w
+0010	f
+0011	a
+01000	!!!!n
+01001	sd
+0101	d
+0110	s
+01110	q
+01111	!!!
+1	 
+
+```
+Command:
+```
+./fileCompressor -d inputtest.txt.hcz HuffmanCodebook
+```
+inputtest.txt:
+```
+a	q w 	d s 	a sd 	f d s	 s w	 f
+a q w 		d	s 	sd w
+	!!!	!!!	w f
+
+```
+Success: Decompressed file matches original file.  
+## Recursive build codebook
+**Test 1**  
+recursionTest/  
+|-- anotherDir  
+|   |-- dir3  
+|   |   `-- lel  
+|   `-- file3  
+|-- testfile1  
+`-- testfile2  
+lel:
+```
+hi
+
+```
+file3:
+```
+another file in another dir
+
+```
+testfile1:
+```
+this is a file
+
+```
+testfile2:
+```
+this is also a file
+
+```
+Command:
+```
+./fileCompressor -R -b recursionTest/
+```
+HuffmanCodebook:
+```

@@ -6,6 +6,7 @@
 #define LOAD_FACTOR 0.5
 
 
+
 typedef struct _node {
 	char* token; // word
 	int tokenLength;
@@ -21,7 +22,13 @@ typedef struct _heap {
 	int size;
 } Heap;
 
-void recurse(char * dirname);
+//Linked list node
+typedef struct llnode {
+  struct llnode * next;
+  char * name;
+} l_node;
+
+void recurse(char * dirname, l_node * head);
 
 // Makes token node from name and frequency
 Node* makeTokenNode(char*, int, int);

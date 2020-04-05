@@ -42,12 +42,14 @@ h_node * h_add(h_node * h_table, char * str, char * count, int num) {
   int hash_code = h_func(str);
 
   int i = 0, index = hash_code % h_size;
-  while (h_table[index].string != NULL && strcmp(h_table[index].string, str) != 0) { 
+  //  printf("adding %d %s %s %d\n", index, str, count, h_size);
+  while (h_table[index].string != NULL && strcmp(h_table[index].string, str) != 0) {
     index = (hash_code + i++) % h_size;
   }
   (h_table[index]).string = str; //should I instead malloc something new? or nah
   (h_table[index]).hashcode = hash_code;
   if (!num) {
+    //    printf("H:[%s:%s]\n", str, count);
     (h_table[index]).freq = count;
   } else {
     sprintf((h_table[index]).freq, "%d", atoi((h_table[index]).freq) + atoi(count));

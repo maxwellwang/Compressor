@@ -47,7 +47,7 @@ char * readFile(char * filename) {
 }
 
 // Sets escape length accordingly
-void checkFile(char* filename, int* escapeLength) {
+int checkFile(char* filename) {
   int file = open(filename, O_RDONLY);
   if (file == -1) {
     // Open failed -> error
@@ -59,6 +59,7 @@ void checkFile(char* filename, int* escapeLength) {
   int status = read(file, &c, 1);
   int consecEscapes = 1;
   int maxConsecEscapes = consecEscapes; // escape length (# of !s) must be greater than this to avoid confusion
+  int escapeLength = 1;
   int foundEscapeChar = 0;
   while (status) {
     if (status == -1 && errno == EINTR) {
@@ -86,11 +87,11 @@ void checkFile(char* filename, int* escapeLength) {
   if (!foundEscapeChar) {
     maxConsecEscapes = 0;
   }
-  if (maxConsecEscapes + 1 > *escapeLength) {
+  if (maxConsecEscapes + 1 > escapeLength) {
     // new escape length
-    *escapeLength = maxConsecEscapes + 1;
+    escapeLength = maxConsecEscapes + 1;
   }
-  return;
+  return escapeLength;
 }
 
 // For whitespace, load each whitespace char once
@@ -346,7 +347,7 @@ char * nextToken(char * string, int space) {
   //  printf("DEBUG: %s %i\n", token, i);
   return token;
 }
-void decompressFile(char * filename, char * codebookname, h_node * table) {
+void decompressFile(char * filename, char * codebookname, h_node ** table) {
   char * file = readFile(codebookname);
   int i, j;
   char * token = "lol";
@@ -368,7 +369,7 @@ void decompressFile(char * filename, char * codebookname, h_node * table) {
     if (!strlen(token)) {
       break;
     }
-    table = h_add(table, token, token2, 0);
+    *table = h_add(*table, token, token2, 0);
   }
 
   file = readFile(filename);
@@ -384,7 +385,7 @@ void decompressFile(char * filename, char * codebookname, h_node * table) {
     for (j = 0; j < maxlen+1; j++) {
       memset(code, 0, maxlen+1);
       memcpy(code, file+i, j);
-      word = h_get(table, code);
+      word = h_get(*table, code);
       if (word) {
 	if (strncmp(word, escape, strlen(escape)) == 0) {
 	  ws[0] = strToDelim(word, escape);
@@ -399,7 +400,15 @@ void decompressFile(char * filename, char * codebookname, h_node * table) {
   }
 }
 
-void compressFile(char * filename, char * codebookname, h_node * table) {
+void printh(h_node * table) {
+  int i = 0;
+  for (; i < h_size; i++) {
+    if (table[i].string) {
+      printf("[%s:%s]\n", table[i].string, table[i].freq);
+    }
+  }
+}
+void compressFile(char * filename, char * codebookname, h_node ** table, int flag) {
   char * file = readFile(codebookname);
   char * token = "lol";
   char * token2;
@@ -407,10 +416,8 @@ void compressFile(char * filename, char * codebookname, h_node * table) {
   int len = 0;
   int encode;
   char * filenameC = malloc(strlen(filename) + 1 + 4);
-      
-      
+
   escape = nextToken(file + len, 0);
-  //    printf("Escape char: %s\n", escape);
   len += strlen(escape) + 1;
   while (strlen(token)) {
     token = nextToken(file + len, 0);
@@ -420,8 +427,9 @@ void compressFile(char * filename, char * codebookname, h_node * table) {
     if (!strlen(token)) {
       break;
     }
-    table = h_add(table, token2, token, 0);
+    *table = h_add(*table, token2, token, 0);
   }
+    
   file = readFile(filename);
   delim = '0';
   len = 0;
@@ -430,17 +438,16 @@ void compressFile(char * filename, char * codebookname, h_node * table) {
   memcpy(filenameC+strlen(filename), ".hcz", 4);
   filenameC[strlen(filename)+4] = 0;
   encode = open(filenameC, O_RDWR | O_CREAT, 00600);
-      
   while (delim) {
     token = nextToken(file + len, 1);
     len+=strlen(token)+1;
     token2 = delimToStr(delim, escape);
     if (strlen(token)) {
-      token = h_get(table, token);
+      token = h_get(*table, token);
       write(encode, token, strlen(token));
     }
     if (strlen(token2)) {
-      token2 = h_get(table, token2);
+      token2 = h_get(*table, token2);
       write(encode, token2, strlen(token2));
     }
 
@@ -449,15 +456,30 @@ void compressFile(char * filename, char * codebookname, h_node * table) {
   close(encode);
 }
 
-void buildCodebookFunc(char * filename, h_node * table) {
+void buildCodebookFunc(char * filename, h_node * table, l_node * l_head) {
   int codebook = 0;
   Heap* aHeap = (Heap*)malloc(sizeof(aHeap));
   aHeap->finalIndex = -1; // it increments when insertNode is called
   aHeap->size = 100;
   aHeap->heap = (Node**)malloc(sizeof(Node*) * aHeap->size);
-  int escapeLength = 1;	
-  checkFile(filename, &escapeLength);
-  table = populateHashmap(filename, table, escapeLength);
+  int escapeLength, helper;
+  if (!l_head) {
+    escapeLength = checkFile(filename);
+    table = populateHashmap(filename, table, escapeLength);
+  } else {
+    l_node * ptr;
+    for (ptr=l_head; ptr->next != NULL; ptr=ptr->next) {
+      if (ptr->name) {
+	helper = checkFile(ptr->name);
+	escapeLength = helper > escapeLength ? helper : escapeLength;
+      }
+    }
+    for (ptr=l_head; ptr->next != NULL; ptr=ptr->next) {
+      if (ptr->name) {
+	table = populateHashmap(ptr->name, table, escapeLength);
+      }
+    }
+  }
   Node* temp;
   int i;
   for (i = 0; i < h_size; i++) {
@@ -575,6 +597,7 @@ int main(int argc, char** argv) {
 	  if (recursive) {
 	    // Expecting directory
 	    dir = opendir(argv[argCounter]);
+	    dirname = argv[argCounter];
 	    if (!dir) {
 	      // Open failed -> error
 	      printf("Error: Expected to open %s directory, failed to open\n", argv[argCounter]);
@@ -634,33 +657,43 @@ int main(int argc, char** argv) {
     printf("Error: Expected at least one file/directory, received none\n");
     exit(EXIT_FAILURE);
   }
-	
+      
   // Execute desired command
   h_node* table = h_init();
   if (recursive) {
-    // Descend through directory and recursively execute command
+    // Descend through directory and generates linked list of all names
+    l_node * head = malloc(sizeof(l_node));
+    l_node * ptr;
+    int flag = 1;
+    recurse(dirname, head);
+
     if (buildCodebook) {
-      printf("Looking in: %s\n", dirname);
-      recurse(dirname);
-      exit(0);			
+      buildCodebookFunc(0, table, head);
     } else if (compress) {
-		
-    } else if (decompress) {
-		
+      for (ptr=head; ptr != NULL; ptr=ptr->next) {
+	if (ptr->name && strncmp((ptr->name) + strlen(ptr->name)-4, ".hcz", 4) != 0) {
+	  compressFile(ptr->name, codebookname, &table, flag);
+	  flag = 0;
+	}
+      }
+    } else if (decompress) {	
+      for (ptr=head; ptr != NULL; ptr=ptr->next) {
+	if (ptr->name && strncmp((ptr->name) + strlen(ptr->name)-4, ".hcz", 4) == 0) {
+	  decompressFile(ptr->name, codebookname, &table);
+	}
+      }	
     }
   } else {
     // Execute command on file (possibly using codebook)
     if (buildCodebook) {
-      buildCodebookFunc(filename, table);
+      buildCodebookFunc(filename, table, 0);
     } else if (compress) {
-      compressFile(filename, codebookname, table);
+      compressFile(filename, codebookname, &table, 1);
     } else if (decompress) {
-      decompressFile(filename, codebookname, table);
+      decompressFile(filename, codebookname, &table);
     }
-      
   }
 
-  // Close all opened files/directories
   if (file) {
     close(file);
   }

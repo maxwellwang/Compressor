@@ -1,0 +1,713 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "hashmap.h"
+#include "demo.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <string.h>
+#include <errno.h>
+
+char * readFile(char * filename) {
+  int buff_size = 4096;
+  char * huff_buffer = (char*)malloc(buff_size);
+  if (!huff_buffer) {
+    printf("Error: Malloc failed\n");
+    exit(EXIT_FAILURE);
+  }
+  memset(huff_buffer, 0, 4096);
+     
+  int huff_read = 0;
+  int huff_fd = open(filename, O_RDONLY);
+  int huff_status;
+
+  do {
+    huff_status = read(huff_fd, huff_buffer+huff_read, buff_size-1-huff_read);
+    huff_read += huff_status;
+    if (huff_status == 0) {
+      break;
+    }
+    char * huff_tmp = (char*)malloc(buff_size*2);
+    if (!huff_tmp) {
+      printf("Error: Malloc failed\n");
+      exit(EXIT_FAILURE);
+    }
+    memset(huff_tmp, 0, buff_size*2);
+    memcpy(huff_tmp, huff_buffer, huff_read);
+    free(huff_buffer);
+    huff_buffer = huff_tmp;
+    buff_size *= 2;
+  }
+  while (huff_status > 0);
+  close(huff_fd);
+  return huff_buffer;
+}
+
+// Sets escape length accordingly
+int checkFile(char* filename) {
+  int file = open(filename, O_RDONLY);
+  if (file == -1) {
+    // Open failed -> error
+    printf("Error: Expected to open %s file, failed to open\n", filename);
+    exit(EXIT_FAILURE);
+  }
+  char c = '?';
+  char pastC = '?'; // need this to count consecutive escape chars
+  int status = read(file, &c, 1);
+  int consecEscapes = 1;
+  int maxConsecEscapes = consecEscapes; // escape length (# of !s) must be greater than this to avoid confusion
+  int escapeLength = 1;
+  int foundEscapeChar = 0;
+  while (status) {
+    if (status == -1 && errno == EINTR) {
+      // interrupted, try again
+      status = read(file, &c, 1);
+      continue;
+    }
+    if (c == '!') {
+      foundEscapeChar = 1;
+    }
+    if (c == '!' && pastC == '!') {
+      consecEscapes++;
+    } else if (c != '!' && pastC == '!') {
+      if (consecEscapes > maxConsecEscapes) {
+	maxConsecEscapes = consecEscapes;
+      }
+      consecEscapes = 1;
+    }
+    pastC = c;
+    status = read(file, &c, 1);
+  }
+  if (consecEscapes > maxConsecEscapes) {
+    maxConsecEscapes = consecEscapes;
+  }
+  if (!foundEscapeChar) {
+    maxConsecEscapes = 0;
+  }
+  if (maxConsecEscapes + 1 > escapeLength) {
+    // new escape length
+    escapeLength = maxConsecEscapes + 1;
+  }
+  return escapeLength;
+}
+
+// For whitespace, load each whitespace char once
+h_node* loadEachChar(char* buffer, int tokenLength, h_node* table, int escapeLength) {
+	int i;
+	for (i = 0; i < tokenLength; i++) {
+		if (buffer[i] == ' ') {
+			table = h_add_helper(table, buffer + i, 1, "1");
+		} else {
+			table = h_add_helper(table, buffer + i, escapeLength + 1, "1");
+			i += escapeLength;
+		}
+	}
+	return table;
+}
+
+// Reads file to populate hashmap w/ tokens and frequencies, also sets escapeLength
+h_node * populateHashmap(char * filename, h_node* table, int escapeLength) {
+  int file = open(filename, O_RDONLY);
+  if (file == -1) {
+    // Open failed -> error
+    printf("Error: Expected to open %s file, failed to open\n", filename);
+    exit(EXIT_FAILURE);
+  }
+  
+  char c = '?';
+  char* buffer = (char*)malloc(10);
+  if (!buffer) {
+    printf("Error: Malloc failed\n");
+    exit(EXIT_FAILURE);
+  }
+  memset(buffer, '\0', 10);
+  char* nextBuffer = NULL; // double the buffer if it isn't long enough
+  int tokenLength = 0;
+  int size = 10; // buffer size
+  char* head = buffer; // where to write next char
+  int status = read(file, &c, 1);
+  int j; // loop var to be used later
+  int readingWhitespace = ISWHITESPACE(c); // read whitespace until non-whitespace, read non-whitespace until whitespace
+  while (status) {
+    if (status == -1 && errno == EINTR) {
+      // interrupted, try again
+      status = read(file, &c, 1);
+      continue;
+    }
+    if (readingWhitespace == !ISWHITESPACE(c)) { // change from whitespace to non-whitespace or vice versa
+      // load current token into hashmap
+      if (readingWhitespace) {
+      	table = loadEachChar(buffer, tokenLength, table, escapeLength);
+      } else {
+      	table = h_add_helper(table, buffer, tokenLength, "1");
+      }
+      tokenLength = 0;
+      head = buffer;
+    }
+    readingWhitespace = ISWHITESPACE(c);
+    // add char to buffer, resize if necessary
+    if (tokenLength + 1 > size) {
+      // reallocate memory
+      size *= 2;
+      nextBuffer = (char*)malloc(size);
+      memcpy(nextBuffer, buffer, size / 2);
+      free(buffer);
+      buffer = nextBuffer;
+      nextBuffer = NULL;
+      head = buffer + tokenLength;
+    }
+    if (ISWHITESPACE(c) && c != ' ') {
+      // escape sequence then the letter
+      if (tokenLength + escapeLength + 1 > size) {
+	// reallocate memory
+	size += (escapeLength + 1);
+	nextBuffer = (char*)malloc(size);
+	memcpy(nextBuffer, buffer, size - escapeLength - 1);
+	free(buffer);
+	buffer = nextBuffer;
+	nextBuffer = NULL;
+	head = buffer + tokenLength;
+      }
+      for (j = 0; j < escapeLength; j++) {
+	*head = '!';
+	head++;
+	tokenLength++;
+      }
+      switch(c) {
+      case '\n':
+	*head = 'n';
+	break;
+      case '\t':
+	*head = 't';
+	break;
+      case '\v':
+	*head = 'v';
+	break;
+      case '\f':
+	*head = 'f';
+	break;
+      case '\r':
+	*head = 'r';
+	break;
+      default:
+	break;
+      }
+      head++;
+      tokenLength++;
+    } else {
+      *head = c;
+      head++;
+      tokenLength++;
+    }
+    status = read(file, &c, 1);
+  }
+  // load in last token
+  table = h_add_helper(table, buffer, tokenLength, "1");
+  free(buffer);
+  return table;
+}
+
+// Recursively navigates Huffman tree to populate codebook
+void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, int* size, int* pathcodeLength) {
+  char* temp = NULL;
+  if (!aNode) {
+    return;
+  }
+  if (!(aNode->left) && !(aNode->right) && *pathcodeLength == 0) {
+  	// this is the only node
+    write(codebook, "0", 1);
+    write(codebook, "\t", 1);
+    write(codebook, aNode->token, aNode->tokenLength);
+    write(codebook, "\n", 1);
+    return;
+  }
+  // go left
+  if (*pathcodeLength + 1 > *size) {
+    // double pathcode length
+    temp = (char*)malloc(*size * 2);
+    if (!temp) {
+      printf("Error: Malloc failed\n");
+      exit(EXIT_FAILURE);
+    }
+    memcpy(temp, pathcode, *size);
+    (*size) *= 2;
+    free(pathcode);
+    pathcode = temp;
+    temp = NULL;
+  }
+  head = pathcode + *pathcodeLength;
+  *head = '0';
+  (*pathcodeLength)++;
+  head++;
+  recursivePopulate(codebook, aNode->left, pathcode, head, size, pathcodeLength);
+  // back up
+  (*pathcodeLength)--;
+  head--;
+  // Use token and pathcode, the actually important part
+  if (aNode->token) {
+    // has a token, add to codebook
+    write(codebook, pathcode, *pathcodeLength);
+    write(codebook, "\t", 1);
+    write(codebook, aNode->token, aNode->tokenLength);
+    write(codebook, "\n", 1);
+  }
+  // go right
+  if (*pathcodeLength + 1 > *size) {
+    // double pathcode length
+    temp = (char*)malloc(*size * 2);
+    if (!temp) {
+      printf("Error: Malloc failed\n");
+      exit(EXIT_FAILURE);
+    }
+    memcpy(temp, pathcode, *size);
+    (*size) *= 2;
+   	free(pathcode);
+    pathcode = temp;
+    temp = NULL;
+  }
+  head = pathcode + *pathcodeLength;
+  *head = '1';
+  (*pathcodeLength)++;
+  head++;
+  recursivePopulate(codebook, aNode->right, pathcode, head, size, pathcodeLength);
+  // back up
+  (*pathcodeLength)--;
+  head--;
+  return;
+}
+
+char strToDelim(char * str, char * escape) {
+  switch(str[strlen(escape)]) {
+  case 'n':
+    return '\n';
+  case 't':
+    return '\t';
+  case 'v':
+    return '\v';
+  case 'f':
+    return '\f';
+  case 'r':
+    return '\r';
+  }
+  return 0;
+}
+
+char * delimToStr(char delim, char * escape) {
+  char * str;
+  if (delim == '\n' || delim == '\t' || delim == '\v' || delim == '\r' || delim == '\f') {
+    int len = strlen(escape);
+    str = malloc(len + 2);
+    memcpy(str, escape, len);
+    switch (delim) {
+    case '\n':
+      delim = 'n';
+      break;
+    case '\t':
+      delim = 't';
+      break;
+    case '\v':
+      delim = 'v';
+      break;
+    case '\f':
+      delim = 'f';
+      break;
+    case '\r':
+      delim = 'r';
+      break;
+    default:
+      break;
+
+    }
+    str[len] = delim;
+    str[len+1] = 0;
+  } else {
+    str = malloc(2);
+    str[0] = delim;
+    str[1] = 0;
+  }
+  return str;
+}
+
+char delim;
+char * nextToken(char * string, int space) {
+  int i = 0;
+  delim = 0;
+  for (; i < strlen(string); i++) {
+    if (string[i] == '\n' || string[i] == '\t' || string[i] == '\v' || string[i] == '\r' || string[i] == '\f' || string[i] == 0 || (space && string[i] == ' ')) {
+      delim = string[i];
+      break;
+    }
+  }
+  char * token = malloc(i+1);
+  memset(token, 0, i+1);
+  memcpy(token, string, i);
+  //  printf("DEBUG: %s %i\n", token, i);
+  return token;
+}
+void decompressFile(char * filename, char * codebookname, h_node ** table) {
+  char * file = readFile(codebookname);
+  int i, j;
+  char * token = "lol";
+  char * token2;
+  char * escape;
+  int len = 0;
+  int maxlen = 0;
+  int decode;
+  char * filenameC = malloc(strlen(filename) + 1 - 4);
+            
+  escape = nextToken(file + len, 0);
+  len += strlen(escape) + 1;
+  while (strlen(token)) {
+    token = nextToken(file + len, 0);
+    maxlen = strlen(token) > maxlen ? strlen(token) : maxlen;
+    len += strlen(token) + 1;
+    token2 = nextToken(file + len, 0);
+    len += strlen(token2) + 1;
+    if (!strlen(token)) {
+      break;
+    }
+    *table = h_add(*table, token, token2, 0);
+  }
+
+  file = readFile(filename);
+  len = (strlen(file));
+  memcpy(filenameC, filename, strlen(filename)-4);
+  filenameC[strlen(filename)-4] = 0;
+  decode = open(filenameC, O_RDWR | O_CREAT, 00600);
+  char * code = malloc(maxlen+1);
+  char * word;
+  char * ws = malloc(2);
+  ws[1] = 0;
+  for (i = 0; i < len; i++) {
+    for (j = 0; j < maxlen+1; j++) {
+      memset(code, 0, maxlen+1);
+      memcpy(code, file+i, j);
+      word = h_get(*table, code);
+      if (word) {
+	if (strncmp(word, escape, strlen(escape)) == 0) {
+	  ws[0] = strToDelim(word, escape);
+	  write(decode, ws, 1);
+	} else {
+	  write(decode, word, strlen(word));
+	}
+	i += j-1;
+	break;
+      }
+    }
+  }
+}
+
+void printh(h_node * table) {
+  int i = 0;
+  for (; i < h_size; i++) {
+    if (table[i].string) {
+      printf("[%s:%s]\n", table[i].string, table[i].freq);
+    }
+  }
+}
+void compressFile(char * filename, char * codebookname, h_node ** table, int flag) {
+  char * file = readFile(codebookname);
+  char * token = "lol";
+  char * token2;
+  char * escape;
+  int len = 0;
+  int encode;
+  char * filenameC = malloc(strlen(filename) + 1 + 4);
+
+  escape = nextToken(file + len, 0);
+  len += strlen(escape) + 1;
+  while (strlen(token)) {
+    token = nextToken(file + len, 0);
+    len += strlen(token) + 1;
+    token2 = nextToken(file + len, 0);
+    len += strlen(token2) + 1;
+    if (!strlen(token)) {
+      break;
+    }
+    *table = h_add(*table, token2, token, 0);
+  }
+    
+  file = readFile(filename);
+  delim = '0';
+  len = 0;
+
+  memcpy(filenameC, filename, strlen(filename));
+  memcpy(filenameC+strlen(filename), ".hcz", 4);
+  filenameC[strlen(filename)+4] = 0;
+  encode = open(filenameC, O_RDWR | O_CREAT, 00600);
+  while (delim) {
+    token = nextToken(file + len, 1);
+    len+=strlen(token)+1;
+    token2 = delimToStr(delim, escape);
+    if (strlen(token)) {
+      token = h_get(*table, token);
+      write(encode, token, strlen(token));
+    }
+    if (strlen(token2)) {
+      token2 = h_get(*table, token2);
+      write(encode, token2, strlen(token2));
+    }
+
+  }
+  write(encode, "\n", 1);
+  close(encode);
+}
+
+void buildCodebookFunc(char * filename, h_node * table, l_node * l_head) {
+  int codebook = 0;
+  Heap* aHeap = (Heap*)malloc(sizeof(aHeap));
+  aHeap->finalIndex = -1; // it increments when insertNode is called
+  aHeap->size = 100;
+  aHeap->heap = (Node**)malloc(sizeof(Node*) * aHeap->size);
+  int escapeLength, helper;
+  if (!l_head) {
+    escapeLength = checkFile(filename);
+    table = populateHashmap(filename, table, escapeLength);
+  } else {
+    l_node * ptr;
+    for (ptr=l_head; ptr != NULL; ptr=ptr->next) {
+      if (ptr->name) {
+	helper = checkFile(ptr->name);
+	escapeLength = helper > escapeLength ? helper : escapeLength;
+      }
+    }
+    for (ptr=l_head; ptr != NULL; ptr=ptr->next) {
+      if (ptr->name) {
+	table = populateHashmap(ptr->name, table, escapeLength);
+      }
+    }
+  }
+  Node* temp;
+  int i;
+  for (i = 0; i < h_size; i++) {
+    if (table[i].string) {
+      // create node and insert into heap
+      temp = makeTokenNode(table[i].string, strlen(table[i].string), atoi(table[i].freq));
+      insertNode(aHeap, temp);
+    }
+  }
+  codebook = open("./HuffmanCodebook", O_RDWR | O_CREAT, 00600);
+  // escape sequence
+  int ind;
+  for (ind = 0; ind < escapeLength; ind++) {
+    write(codebook, "!", 1);
+  }
+  write(codebook, "\n", 1);
+  char* pathcode = (char*)malloc(10);
+  if (!pathcode) {
+    printf("Error: Malloc failed\n");
+    exit(EXIT_FAILURE);
+  }
+  memset(pathcode, '\0', 10);
+  char* head = pathcode;
+  int size = 10;
+  int pathcodeLength = 0;
+  recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, &size, &pathcodeLength);
+
+  // Free all nodes
+  if (aHeap) {
+    //freeHeap(aHeap);
+  }
+  if (codebook) {
+    close(codebook);
+  }
+
+}
+
+int main(int argc, char** argv) {
+  if (argc < 3) {
+    // Less than 3 arguments -> error
+    printf("Error: Expected at least three arguments, received only %d\n", argc);
+    exit(EXIT_FAILURE);
+  }
+  int buildCodebook = 0, compress = 0, decompress = 0, recursive = 0, flagSection = 1, numFlags = 0;
+  int file = 0;
+  DIR* dir = NULL;
+  char * dirname;
+  char * filename;
+  char * codebookname;
+  int argCounter = 1;
+  // Loop through arguments to determine course of action
+  for (argCounter = 1; argCounter < argc; argCounter++) {
+    if (argv[argCounter][0] == '-') {
+      // Flag detected
+      numFlags++;
+      if (!flagSection) {
+	// Flag detected after file/directory -> error
+	printf("Error: Expected flags to come before files/directories, received flag after file/directory\n");
+	exit(EXIT_FAILURE);
+      }
+      if (strlen(argv[argCounter]) > 2) {
+	printf("Error: Expected -b, -c, -d, or -R, received %s\n", argv[argCounter]);
+	exit(EXIT_FAILURE);
+      }
+      switch (argv[argCounter][1]) {
+      case 'b':
+	buildCodebook = 1;
+	break;
+      case 'c':
+	compress = 1;
+	break;
+      case 'd':
+	decompress = 1;
+	break;
+      case 'R':
+	recursive = 1;
+	break;
+      default:
+	// Invalid flag detected -> error
+	printf("Error: Expected -b, -c, -d, or -R, received %s\n", argv[argCounter]);
+	exit(EXIT_FAILURE);
+      }
+    } else {
+      // File/directory detected
+      flagSection = 0;
+      if (!buildCodebook && !compress && !decompress) {
+	// One of these flags is required but none were found -> error
+	if (argCounter == 1) {
+	  // File/directory is where flag should be -> error
+	  printf("Error: Expected -b, -c, -d, or -R to be second argument, received file/directory %s\n", argv[argCounter]);
+	  exit(EXIT_FAILURE);
+	}
+	if (argCounter == 2 && recursive) {
+	  // File/directory is where flag should be (recursive flag prior) -> error
+	  printf("Error: Expected -b, -c, or -d to be third argument (due to recursive flag as second argument), received "
+		 "file/directory %s\n", argv[argCounter]);
+	  exit(EXIT_FAILURE);
+	}
+	if (recursive) {
+	  printf("Error: Expected -b, -c, or -d to be one of the flags, received -R\n");
+	} else {
+	  printf("Error: Expected -b, -c, or -d to be one of the flags, received no flags\n");
+	}
+	exit(EXIT_FAILURE);
+      }
+      if (compress || decompress) {
+	// Expecting file/directory and then codebook file
+	if (argc - numFlags != 3) {
+	  // Should have one file/directory and one file but different amount is detected -> error
+	  printf("Error: Expected one file/directory and then one codebook file, received %d files/directories\n", argc
+		 - numFlags - 1);
+	  exit(EXIT_FAILURE);
+	}
+	if (argCounter == argc - 2) {
+	  // Expecting file/directory to compress/decompress
+	  if (recursive) {
+	    // Expecting directory
+	    dir = opendir(argv[argCounter]);
+	    dirname = argv[argCounter];
+	    if (!dir) {
+	      // Open failed -> error
+	      printf("Error: Expected to open %s directory, failed to open\n", argv[argCounter]);
+	      exit(EXIT_FAILURE);
+	    }
+	  } else {
+	    // Expecting file
+	    filename = argv[argCounter];
+	    //	    file = open(argv[argCounter], O_RDONLY | O_NONBLOCK);
+	    if (file == -1) {
+	      // Open failed -> error
+	      printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
+	      exit(EXIT_FAILURE);
+	    }
+	  }
+	} else {
+	  // Expecting codebook file
+	  codebookname = argv[argCounter];
+//	  codebook = open(argv[argCounter], O_RDONLY);
+//	  if (codebook == -1) {
+//	    // Open failed -> error
+//	    printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
+//	    exit(EXIT_FAILURE);
+//	  }
+	}
+      } else {
+	// Expecting one file/directory
+	if (argc - numFlags != 2) {
+	  // Should have one file/directory but different amount is detected -> error
+	  printf("Error: Expected one file/directory, received %d files/directories\n", argc - numFlags - 1);
+	  exit(EXIT_FAILURE);
+	}
+	if (recursive) {
+	  // Expecting directory
+	  dir = opendir(argv[argCounter]);
+	  dirname = argv[argCounter];
+	  if (!dir) {
+	    // Open failed -> error
+	    printf("Error: Expected to open %s directory, failed to open\n", argv[argCounter]);
+	    exit(EXIT_FAILURE);
+	  }
+	} else {
+	  // Expecting file
+	  filename = argv[argCounter];
+	  //	  file = open(argv[argCounter], O_RDONLY);
+	  //	  if (file == -1) {
+	  //	    // Open failed -> error
+	  //	    printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
+	  //	    exit(EXIT_FAILURE);
+	  //	  }
+	}
+      }
+    }
+  }
+  if (argc - numFlags == 1) {
+    // No files/directories detected -> error
+    printf("Error: Expected at least one file/directory, received none\n");
+    exit(EXIT_FAILURE);
+  }
+      
+  // Execute desired command
+  h_node* table = h_init();
+  if (recursive) {
+    // Descend through directory and generates linked list of all names
+    l_node * head = malloc(sizeof(l_node));
+    l_node * ptr;
+    char * tmp = NULL;
+    int flag = 1;
+
+    if (dirname[strlen(dirname)-1] == 47) {
+      tmp = malloc(strlen(dirname));
+      strcpy(tmp, dirname);
+      tmp[strlen(dirname)-1] = 0;
+      dirname = tmp;
+    }
+    recurse(dirname, head);
+
+    if (buildCodebook) {
+      buildCodebookFunc(0, table, head);
+    } else if (compress) {
+      for (ptr=head; ptr != NULL; ptr=ptr->next) {
+	if (ptr->name && strncmp((ptr->name) + strlen(ptr->name)-4, ".hcz", 4) != 0) {
+	  compressFile(ptr->name, codebookname, &table, flag);
+	  flag = 0;
+	}
+      }
+    } else if (decompress) {	
+      for (ptr=head; ptr != NULL; ptr=ptr->next) {
+	if (ptr->name && strncmp((ptr->name) + strlen(ptr->name)-4, ".hcz", 4) == 0) {
+	  decompressFile(ptr->name, codebookname, &table);
+	}
+      }	
+    }
+  } else {
+    // Execute command on file (possibly using codebook)
+    if (buildCodebook) {
+      buildCodebookFunc(filename, table, 0);
+    } else if (compress) {
+      compressFile(filename, codebookname, &table, 1);
+    } else if (decompress) {
+      decompressFile(filename, codebookname, &table);
+    }
+  }
+
+  if (file) {
+    close(file);
+  }
+  if (dir) {
+    closedir(dir);
+  }
+  return 0;
+}

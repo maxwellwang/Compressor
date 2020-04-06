@@ -235,7 +235,7 @@ void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, in
     }
     memcpy(temp, pathcode, size);
     size *= 2;
-    printf("%s\", pathcode);
+    printf("%s\n", pathcode);
     if (pathcode) {
       free(pathcode);
     }

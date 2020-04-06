@@ -1,5 +1,6 @@
 # File Compressor Test Plan
-File Compressor Test Plan details the test cases that we ran to check the functionality of our program.
+File Compressor Test Plan details the test cases that we ran to check the functionality of our program.  
+Note: All code blocks start with non-whitespace. The PDF converter added a space in the front sometimes that should not be there.
 ## Build codebook
 **Test 1**  
 inputtest.txt:
@@ -237,13 +238,16 @@ a q w 		d	s 	sd w
 Success: Decompressed file matches original file.  
 ## Recursive build codebook
 **Test 1**  
-recursionTest/  
-|-- anotherDir  
-|   |-- dir3  
-|   |   `-- lel  
-|   `-- file3  
-|-- testfile1  
-`-- testfile2  
+Directory Structure:
+```
+recursionTest/
+|-- anotherDir
+|   |-- dir3
+|   |   `-- lel
+|   `-- file3
+|-- testfile1
+`-- testfile2
+```
 lel:
 ```
 hi
@@ -311,18 +315,22 @@ Command:
 lel.hcz:
 ```
 111111101
+
 ```
 file3.hcz:
 ```
 110101110011111001101011000101
+
 ```
 testfile1.hcz:
 ```
 10000111100100101110101
+
 ```
 testfile2.hcz:
 ```
 10000111100110010100101110101
+
 ```
 Success: All files found were correctly compressed into binary code.
 ## Recursive decompress

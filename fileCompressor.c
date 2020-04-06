@@ -212,7 +212,7 @@ h_node * populateHashmap(char * filename, h_node* table, int escapeLength) {
 
 // Recursively navigates Huffman tree to populate codebook
 void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, int* size, int* pathcodeLength) {
-  char* temp;
+  char* temp = NULL;
   if (!aNode) {
     return;
   }
@@ -234,16 +234,11 @@ void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, in
     }
     memcpy(temp, pathcode, *size);
     (*size) *= 2;
-    printf("%s\n", pathcode);
-    if (pathcode) {
-      free(pathcode);
-    }
-    printf("bfter\n");
-	
+    free(pathcode);
     pathcode = temp;
-    head = pathcode + *pathcodeLength;
     temp = NULL;
   }
+  head = pathcode + *pathcodeLength;
   *head = '0';
   (*pathcodeLength)++;
   head++;
@@ -269,13 +264,11 @@ void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, in
     }
     memcpy(temp, pathcode, *size);
     (*size) *= 2;
-    if (pathcode) {
-   	 free(pathcode);
-    }
+   	free(pathcode);
     pathcode = temp;
-    head = pathcode + *pathcodeLength;
     temp = NULL;
   }
+  head = pathcode + *pathcodeLength;
   *head = '1';
   (*pathcodeLength)++;
   head++;
@@ -496,7 +489,6 @@ void buildCodebookFunc(char * filename, h_node * table, l_node * l_head) {
       insertNode(aHeap, temp);
     }
   }
-  printf("A\n");
   codebook = open("./HuffmanCodebook", O_RDWR | O_CREAT, 00600);
   // escape sequence
   int ind;
@@ -513,9 +505,7 @@ void buildCodebookFunc(char * filename, h_node * table, l_node * l_head) {
   char* head = pathcode;
   int size = 10;
   int pathcodeLength = 0;
-  printf("B\n");
   recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, &size, &pathcodeLength);
-  printf("D\n");
 
   // Free all nodes
   if (aHeap) {

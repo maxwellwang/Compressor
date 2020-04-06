@@ -235,7 +235,12 @@ void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, in
     }
     memcpy(temp, pathcode, size);
     size *= 2;
-    free(pathcode);
+    printf("%s\", pathcode);
+    if (pathcode) {
+      free(pathcode);
+    }
+    printf("bfter\n");
+	
     pathcode = temp;
     head = pathcode + pathcodeLength;
     temp = NULL;
@@ -468,13 +473,13 @@ void buildCodebookFunc(char * filename, h_node * table, l_node * l_head) {
     table = populateHashmap(filename, table, escapeLength);
   } else {
     l_node * ptr;
-    for (ptr=l_head; ptr->next != NULL; ptr=ptr->next) {
+    for (ptr=l_head; ptr != NULL; ptr=ptr->next) {
       if (ptr->name) {
 	helper = checkFile(ptr->name);
 	escapeLength = helper > escapeLength ? helper : escapeLength;
       }
     }
-    for (ptr=l_head; ptr->next != NULL; ptr=ptr->next) {
+    for (ptr=l_head; ptr != NULL; ptr=ptr->next) {
       if (ptr->name) {
 	table = populateHashmap(ptr->name, table, escapeLength);
       }
@@ -489,6 +494,7 @@ void buildCodebookFunc(char * filename, h_node * table, l_node * l_head) {
       insertNode(aHeap, temp);
     }
   }
+  printf("A\n");
   codebook = open("./HuffmanCodebook", O_RDWR | O_CREAT, 00600);
   // escape sequence
   int ind;
@@ -505,15 +511,18 @@ void buildCodebookFunc(char * filename, h_node * table, l_node * l_head) {
   char* head = pathcode;
   int size = 10;
   int pathcodeLength = 0;
+  printf("B\n");
   recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, size, pathcodeLength);
+  printf("D\n");
+
   // Free all nodes
-      
   if (aHeap) {
-    freeHeap(aHeap);
+    //freeHeap(aHeap);
   }
   if (codebook) {
     close(codebook);
   }
+
 }
 
 int main(int argc, char** argv) {
@@ -667,12 +676,10 @@ int main(int argc, char** argv) {
     char * tmp = NULL;
     int flag = 1;
 
-
-    if (dirname[strlen(dirname)-1] != 47) {
-      tmp = malloc(strlen(dirname)+2);
+    if (dirname[strlen(dirname)-1] == 47) {
+      tmp = malloc(strlen(dirname));
       strcpy(tmp, dirname);
-      tmp[strlen(dirname)] = 47;
-      tmp[strlen(dirname)+1] = 0;
+      tmp[strlen(dirname)-1] = 0;
       dirname = tmp;
     }
     recurse(dirname, head);
@@ -703,9 +710,7 @@ int main(int argc, char** argv) {
       decompressFile(filename, codebookname, &table);
     }
   }
-  if (dirname == NULL) {
-    free(dirname);
-  }
+
   if (file) {
     close(file);
   }

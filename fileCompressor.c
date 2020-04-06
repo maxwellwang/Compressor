@@ -664,7 +664,17 @@ int main(int argc, char** argv) {
     // Descend through directory and generates linked list of all names
     l_node * head = malloc(sizeof(l_node));
     l_node * ptr;
+    char * tmp = NULL;
     int flag = 1;
+
+
+    if (dirname[strlen(dirname)-1] != 47) {
+      tmp = malloc(strlen(dirname)+2);
+      strcpy(tmp, dirname);
+      tmp[strlen(dirname)] = 47;
+      tmp[strlen(dirname)+1] = 0;
+      dirname = tmp;
+    }
     recurse(dirname, head);
 
     if (buildCodebook) {
@@ -693,7 +703,9 @@ int main(int argc, char** argv) {
       decompressFile(filename, codebookname, &table);
     }
   }
-
+  if (dirname == NULL) {
+    free(dirname);
+  }
   if (file) {
     close(file);
   }

@@ -270,3 +270,102 @@ Command:
 ```
 HuffmanCodebook:
 ```
+!
+0	 
+1000	this
+1001	a
+101	!n
+11000	dir
+11001	also
+1101	another
+1110	file
+11110	is
+111110	in
+111111	hi
+
+```
+Success: All tokens were detected and binary codes generated that reflect their frequencies.
+## Recursive compress
+**Test 1**  
+Same directory structure and file content as above.  
+HuffmanCodebook:
+```
+!
+0	 
+1000	this
+1001	a
+101	!n
+11000	dir
+11001	also
+1101	another
+1110	file
+11110	is
+111110	in
+111111	hi
+
+```
+Command:
+```
+./fileCompressor -R -c recursionTest/ HuffmanCodebook
+```
+lel.hcz:
+```
+111111101
+```
+file3.hcz:
+```
+110101110011111001101011000101
+```
+testfile1.hcz:
+```
+10000111100100101110101
+```
+testfile2.hcz:
+```
+10000111100110010100101110101
+```
+Success: All files found were correctly compressed into binary code.
+## Recursive decompress
+**Test 1**  
+Same directory structure and file content as above.  
+HuffmanCodebook:
+```
+!
+0	 
+1000	this
+1001	a
+101	!n
+11000	dir
+11001	also
+1101	another
+1110	file
+11110	is
+111110	in
+111111	hi
+
+```
+Command:
+```
+./fileCompressor -R -d recursionTest/ HuffmanCodebook
+```
+lel:
+```
+hi
+
+```
+file3:
+```
+another file in another dir
+
+```
+testfile1:
+```
+this is a file
+
+```
+testfile2:
+```
+this is also a file
+
+```
+Success: All decompressed files match original files.

@@ -211,13 +211,13 @@ h_node * populateHashmap(char * filename, h_node* table, int escapeLength) {
 }
 
 // Recursively navigates Huffman tree to populate codebook
-void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, int size, int pathcodeLength) {
+void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, int* size, int* pathcodeLength) {
   char* temp;
   if (!aNode) {
     return;
   }
-  if (!(aNode->left) && !(aNode->right) && pathcodeLength == 0) {
-    // this is the only node
+  if (!(aNode->left) && !(aNode->right) && *pathcodeLength == 0) {
+  	// this is the only node
     write(codebook, "0", 1);
     write(codebook, "\t", 1);
     write(codebook, aNode->token, aNode->tokenLength);
@@ -225,16 +225,15 @@ void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, in
     return;
   }
   // go left
-  *head = '0';
-  if (pathcodeLength + 1 > size) {
+  if (*pathcodeLength + 1 > *size) {
     // double pathcode length
-    temp = (char*)malloc(size * 2);
+    temp = (char*)malloc(*size * 2);
     if (!temp) {
       printf("Error: Malloc failed\n");
-      exit(EXIT_SUCCESS);
+      exit(EXIT_FAILURE);
     }
-    memcpy(temp, pathcode, size);
-    size *= 2;
+    memcpy(temp, pathcode, *size);
+    (*size) *= 2;
     printf("%s\n", pathcode);
     if (pathcode) {
       free(pathcode);
@@ -242,44 +241,47 @@ void recursivePopulate(int codebook, Node* aNode, char* pathcode, char* head, in
     printf("bfter\n");
 	
     pathcode = temp;
-    head = pathcode + pathcodeLength;
+    head = pathcode + *pathcodeLength;
     temp = NULL;
   }
-  pathcodeLength++;
+  *head = '0';
+  (*pathcodeLength)++;
   head++;
   recursivePopulate(codebook, aNode->left, pathcode, head, size, pathcodeLength);
   // back up
-  pathcodeLength--;
+  (*pathcodeLength)--;
   head--;
   // Use token and pathcode, the actually important part
   if (aNode->token) {
     // has a token, add to codebook
-    write(codebook, pathcode, pathcodeLength);
+    write(codebook, pathcode, *pathcodeLength);
     write(codebook, "\t", 1);
     write(codebook, aNode->token, aNode->tokenLength);
     write(codebook, "\n", 1);
   }
   // go right
-  *head = '1';
-  if (pathcodeLength + 1 > size) {
+  if (*pathcodeLength + 1 > *size) {
     // double pathcode length
-    temp = (char*)malloc(size * 2);
+    temp = (char*)malloc(*size * 2);
     if (!temp) {
       printf("Error: Malloc failed\n");
-      exit(EXIT_SUCCESS);
+      exit(EXIT_FAILURE);
     }
-    memcpy(temp, pathcode, size);
-    size *= 2;
-    free(pathcode);
+    memcpy(temp, pathcode, *size);
+    (*size) *= 2;
+    if (pathcode) {
+   	 free(pathcode);
+    }
     pathcode = temp;
-    head = pathcode + pathcodeLength;
+    head = pathcode + *pathcodeLength;
     temp = NULL;
   }
-  pathcodeLength++;
+  *head = '1';
+  (*pathcodeLength)++;
   head++;
   recursivePopulate(codebook, aNode->right, pathcode, head, size, pathcodeLength);
   // back up
-  pathcodeLength--;
+  (*pathcodeLength)--;
   head--;
   return;
 }
@@ -512,7 +514,7 @@ void buildCodebookFunc(char * filename, h_node * table, l_node * l_head) {
   int size = 10;
   int pathcodeLength = 0;
   printf("B\n");
-  recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, size, pathcodeLength);
+  recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, &size, &pathcodeLength);
   printf("D\n");
 
   // Free all nodes

@@ -18,7 +18,7 @@ void recurse(char * dirname, l_node * head) {
   char type;
   l_node * node;
   if (!dir_struct) {
-    printf("Bye %s %s\n", dirname, strerror(errno));
+    printf("Error: not a dir %s %s\n", dirname, strerror(errno));
     return;
   }
   

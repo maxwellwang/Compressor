@@ -444,10 +444,18 @@ void compressFile(char * filename, char * codebookname, h_node ** table, int fla
     token2 = delimToStr(delim, escape);
     if (strlen(token)) {
       token = h_get(*table, token);
+      if (token == NULL) {
+	printf("Error: Invalid codebook or file!\n");
+	exit(EXIT_FAILURE);
+      }
       write(encode, token, strlen(token));
     }
     if (strlen(token2)) {
       token2 = h_get(*table, token2);
+      if (token2 == NULL) {
+	printf("Error: Invalid codebook or file!\n");
+	exit(EXIT_FAILURE);
+      }
       write(encode, token2, strlen(token2));
     }
 
@@ -496,14 +504,14 @@ void buildCodebookFunc(char * filename, h_node * table, l_node * l_head) {
     write(codebook, "!", 1);
   }
   write(codebook, "\n", 1);
-  char* pathcode = (char*)malloc(10);
+  char* pathcode = (char*)malloc(256);
   if (!pathcode) {
     printf("Error: Malloc failed\n");
     exit(EXIT_FAILURE);
   }
-  memset(pathcode, '\0', 10);
+  memset(pathcode, '\0', 256);
   char* head = pathcode;
-  int size = 10;
+  int size = 256;
   int pathcodeLength = 0;
   recursivePopulate(codebook, buildHuffmanTree(aHeap), pathcode, head, &size, &pathcodeLength);
 
@@ -617,12 +625,6 @@ int main(int argc, char** argv) {
 	} else {
 	  // Expecting codebook file
 	  codebookname = argv[argCounter];
-//	  codebook = open(argv[argCounter], O_RDONLY);
-//	  if (codebook == -1) {
-//	    // Open failed -> error
-//	    printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
-//	    exit(EXIT_FAILURE);
-//	  }
 	}
       } else {
 	// Expecting one file/directory
@@ -643,12 +645,6 @@ int main(int argc, char** argv) {
 	} else {
 	  // Expecting file
 	  filename = argv[argCounter];
-	  //	  file = open(argv[argCounter], O_RDONLY);
-	  //	  if (file == -1) {
-	  //	    // Open failed -> error
-	  //	    printf("Error: Expected to open %s file, failed to open\n", argv[argCounter]);
-	  //	    exit(EXIT_FAILURE);
-	  //	  }
 	}
       }
     }
@@ -680,7 +676,7 @@ int main(int argc, char** argv) {
       buildCodebookFunc(0, table, head);
     } else if (compress) {
       for (ptr=head; ptr != NULL; ptr=ptr->next) {
-	if (ptr->name && strncmp((ptr->name) + strlen(ptr->name)-4, ".hcz", 4) != 0) {
+	if (ptr->name) { // && strncmp((ptr->name) + strlen(ptr->name)-4, ".hcz", 4) != 0) {
 	  compressFile(ptr->name, codebookname, &table, flag);
 	  flag = 0;
 	}
